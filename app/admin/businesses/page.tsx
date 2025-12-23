@@ -42,7 +42,7 @@ interface PublicBusiness {
   category: string
   description: string
   needed_funds: number
-  image_url?: string
+  image_url?: string 
   submission_id?: string
 }
 
