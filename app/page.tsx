@@ -3,8 +3,11 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Users, TrendingUp, ArrowRight, Shield, Zap, Globe, Building2 } from "lucide-react"
+import { redirect } from "next/navigation"
 
 export default function HomePage() {
+
+  redirect("/login")
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
