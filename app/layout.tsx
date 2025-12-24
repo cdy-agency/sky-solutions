@@ -10,9 +10,8 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "SKY Solutions - Connect Entrepreneurs & Investors",
+  title: "SKY Solutions",
   description: "Platform connecting entrepreneurs with investors to fund and grow businesses",
-    generator: 'v0.app'
 }
 
 export default function RootLayout({
