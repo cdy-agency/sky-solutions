@@ -5,6 +5,7 @@ import Link from "next/link"
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
@@ -18,18 +19,25 @@ export default function Navbar() {
         ${scrolled ? "bg-white/90 backdrop-blur-xl shadow-sm" : "bg-transparent"}
       `}
     >
-      <div className="max-w-330 mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="flex h-16 items-center justify-between">
-
+          
           {/* LEFT */}
           <div className="flex items-center gap-10">
-            <Link href="/" className="text-[17px] font-semibold tracking-tight text-[#3B82F6]">
+            <Link
+              href="/"
+              className="text-[17px] font-semibold tracking-tight text-[#3B82F6]"
+            >
               SKY SOLUTION
             </Link>
 
             <div className="hidden md:flex items-center gap-7 text-[14px] text-gray-600">
-              <Link href="#" className="hover:text-gray-900">Discover Projects</Link>
-              <Link href="#" className="hover:text-gray-900">Pre-IPO & Funds</Link>
+              <Link href="#" className="hover:text-gray-900">
+                Discover Projects
+              </Link>
+              <Link href="#" className="hover:text-gray-900">
+                Pre-IPO & Funds
+              </Link>
             </div>
           </div>
 
@@ -41,21 +49,51 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* RIGHT */}
-          <div className="flex items-center gap-6 text-[14px] text-gray-600">
+          {/* RIGHT (DESKTOP) */}
+          <div className="hidden md:flex items-center gap-6 text-[14px] text-gray-600">
             <Link href="#" className="hover:text-gray-900">Raise Money</Link>
             <Link href="#" className="hover:text-gray-900">Learn</Link>
-            <Link href="#" className="hover:text-gray-900">Log in</Link>
+            <Link href="/login" className="hover:text-gray-900">Log in</Link>
             <Link
-              href="#"
+              href="/register"
               className="px-4 py-2 rounded-md border border-gray-300 text-gray-800 font-medium hover:bg-gray-50"
             >
               Sign up
             </Link>
           </div>
 
+          {/* MOBILE MENU BUTTON */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden text-gray-700"
+            aria-label="Toggle menu"
+          >
+            <svg width="24" height="24" fill="none" stroke="currentColor">
+              <path strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
         </div>
       </div>
+
+      {/* MOBILE MENU */}
+      {menuOpen && (
+        <div className="md:hidden bg-white/95 backdrop-blur-xl border-t">
+          <div className="flex flex-col px-6 py-4 gap-4 text-[14px] text-gray-700">
+            <Link href="#" onClick={() => setMenuOpen(false)}>Discover Projects</Link>
+            <Link href="#" onClick={() => setMenuOpen(false)}>Pre-IPO & Funds</Link>
+            <Link href="#" onClick={() => setMenuOpen(false)}>Raise Money</Link>
+            <Link href="#" onClick={() => setMenuOpen(false)}>Learn</Link>
+            <Link href="/login" onClick={() => setMenuOpen(false)}>Log in</Link>
+            <Link
+              href="/register"
+              onClick={() => setMenuOpen(false)}
+              className="mt-2 inline-flex justify-center rounded-md border border-gray-300 px-4 py-2 font-medium hover:bg-gray-50"
+            >
+              Sign up
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* bottom glass border */}
       <div className="h-px w-full bg-linear-to-r from-transparent via-gray-300/40 to-transparent" />
