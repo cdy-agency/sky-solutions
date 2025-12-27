@@ -12,9 +12,9 @@ export default function Hero() {
 
           {/* LEFT COPY */}
           <div className="relative z-10">
-            <span className="inline-flex items-center mb-6 px-4 py-1.5 text-[11px] tracking-wide font-semibold rounded-full bg-black text-white">
+            {/* <span className="inline-flex items-center mb-6 px-4 py-1.5 text-[11px] tracking-wide font-semibold rounded-full bg-black text-white">
               NEW FOR ACCREDITED INVESTORS · Pre-IPO Startups & Insider Funds
-            </span>
+            </span> */}
 
             <div className="relative inline-block">
               <div className="absolute -inset-4 bg-linear-to-r from-[#FDE6C8] to-[#E9E0FF] blur-2xl opacity-70 rounded-full" />
@@ -35,11 +35,12 @@ export default function Hero() {
 
             <div className="mt-10 flex gap-4">
               <button className="px-6 py-3 bg-[#2563EB] text-white text-sm font-semibold rounded-md shadow-sm">
-                Join SKYSOLS
+                <a href="/register?role=investor"> Invest In the Startup</a>
+               
               </button>
-              <button className="px-6 py-3 border border-gray-300 text-sm font-semibold rounded-md">
+              {/* <button className="px-6 py-3 border border-gray-300 text-sm font-semibold rounded-md">
                 Explore Projects
-              </button>
+              </button> */}
             </div>
           </div>
 

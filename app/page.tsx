@@ -26,7 +26,7 @@ export default function Home() {
       <TrustSection />
       <ExploreStartups />
       <CoInvest />
-      <BrowseCategory />
+      {/* <BrowseCategory /> */}
       <WhyInvest />
       <HowItWorks />
       <InvestmentContracts />

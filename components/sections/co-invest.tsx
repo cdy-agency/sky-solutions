@@ -52,12 +52,14 @@ export default function CoInvest() {
             <p className="text-xs text-gray-500 mb-2">Cap Table</p>
 
             <input
-              placeholder="aldz   CDY AGENCY"
+              disabled
+              placeholder="aldz Sky solutions"
               className="w-full border rounded-md px-3 py-2 text-sm mb-3"
             />
 
             <input
               placeholder="Y Combinator"
+              disabled
               className="w-full border rounded-md px-3 py-2 text-sm mb-3"
             />
 
@@ -70,7 +72,10 @@ export default function CoInvest() {
         {/* CTA */}
         <div className="flex justify-center mt-20">
           <button className="bg-[#0F172A] text-white px-10 py-3 rounded-md text-sm font-semibold">
-            Explore Investors
+           <a href="/register?role=entrepreneur">
+             Explore Investors
+           </a>
+          
           </button>
         </div>
       </div>
