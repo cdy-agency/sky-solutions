@@ -53,7 +53,10 @@ export default function NewBusinessPage() {
   const handlePdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
 
-     if (file) {
+    
+      
+    if (file) {
+
       const MAX_FILE_SIZE = 1 * 1024 * 1024 // 2MB
 
       if (file.size > MAX_FILE_SIZE) {
@@ -64,7 +67,7 @@ export default function NewBusinessPage() {
         })
         return
       }
-    if (file) {
+
       if (file.type !== "application/pdf") {
         toast({ title: "Error", description: "Please upload a PDF file", variant: "destructive" })
         return
