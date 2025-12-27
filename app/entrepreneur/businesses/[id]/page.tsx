@@ -159,12 +159,12 @@ export default function BusinessDetailPage() {
                 <CardTitle>Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Link href={`/entrepreneur/businesses/${business._id}/edit`} className="block">
+                {/* <Link href={`/entrepreneur/businesses/${business._id}/edit`} className="block">
                   <Button className="w-full">
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Business
                   </Button>
-                </Link>
+                </Link> */}
                 {business.pdf_url && (
                   <a href={business.pdf_url} target="_blank" rel="noopener noreferrer" className="block">
                     <Button variant="outline" className="w-full bg-transparent">

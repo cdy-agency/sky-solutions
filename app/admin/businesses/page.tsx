@@ -199,6 +199,19 @@ export default function AdminBusinessesPage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+
+     if (file) {
+      const MAX_FILE_SIZE = 1 * 1024 * 1024 // 2MB
+
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "Error",
+          description: `File size exceeds 1MB limit. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`,
+          variant: "destructive",
+        })
+        return
+      }
+
     if (file) {
       if (!file.type.startsWith("image/")) {
         toast({ title: "Error", description: "Please upload an image file", variant: "destructive" })
