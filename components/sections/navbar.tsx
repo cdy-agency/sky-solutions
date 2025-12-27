@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-
+import Image from "next/image"
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -24,20 +24,23 @@ export default function Navbar() {
           
           {/* LEFT */}
           <div className="flex items-center gap-10">
-            <Link
-              href="/"
-              className="text-[17px] font-semibold tracking-tight text-[#3B82F6]"
-            >
-              SKY SOLUTION
-            </Link>
+             <Link href="/" className="flex items-center gap-2">
+                        <Image
+                          src="/images/blue-20and-20orange-20circle-20icon-20business-20logo-20-283-29.png"
+                          alt="SKY Solutions Logo"
+                          width={120}
+                          height={40}
+                          className="h-8 w-auto"
+                        />
+                      </Link>
 
             <div className="hidden md:flex items-center gap-7 text-[14px] text-gray-600">
-              <Link href="#" className="hover:text-gray-900">
+              <Link href="/register" className="hover:text-gray-900">
                 Discover Projects
               </Link>
-              <Link href="#" className="hover:text-gray-900">
+              {/* <Link href="#" className="hover:text-gray-900">
                 Pre-IPO & Funds
-              </Link>
+              </Link> */}
             </div>
           </div>
 
@@ -51,8 +54,8 @@ export default function Navbar() {
 
           {/* RIGHT (DESKTOP) */}
           <div className="hidden md:flex items-center gap-6 text-[14px] text-gray-600">
-            <Link href="#" className="hover:text-gray-900">Raise Money</Link>
-            <Link href="#" className="hover:text-gray-900">Learn</Link>
+            {/* <Link href="#" className="hover:text-gray-900">Raise Money</Link> */}
+            {/* <Link href="#" className="hover:text-gray-900">Learn</Link> */}
             <Link href="/login" className="hover:text-gray-900">Log in</Link>
             <Link
               href="/register"
@@ -80,9 +83,9 @@ export default function Navbar() {
         <div className="md:hidden bg-white/95 backdrop-blur-xl border-t">
           <div className="flex flex-col px-6 py-4 gap-4 text-[14px] text-gray-700">
             <Link href="#" onClick={() => setMenuOpen(false)}>Discover Projects</Link>
-            <Link href="#" onClick={() => setMenuOpen(false)}>Pre-IPO & Funds</Link>
-            <Link href="#" onClick={() => setMenuOpen(false)}>Raise Money</Link>
-            <Link href="#" onClick={() => setMenuOpen(false)}>Learn</Link>
+            {/* <Link href="#" onClick={() => setMenuOpen(false)}>Pre-IPO & Funds</Link> */}
+            {/* <Link href="#" onClick={() => setMenuOpen(false)}>Raise Money</Link> */}
+            {/* <Link href="#" onClick={() => setMenuOpen(false)}>Learn</Link> */}
             <Link href="/login" onClick={() => setMenuOpen(false)}>Log in</Link>
             <Link
               href="/register"
