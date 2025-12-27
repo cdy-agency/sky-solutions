@@ -77,6 +77,20 @@ export const investorApi = {
 
   getInvestments: (token: string) => apiClient<any[]>("/investor/investments", { token }),
 }
+// Investor APIs
+export const publicApi = {
+  getBusinesses: (token: string, params?: { category?: string; search?: string }) => {
+    const queryString = params ? `?${new URLSearchParams(params).toString()}` : ""
+    return apiClient<any[]>(`/public/businesses${queryString}`, { token })
+  },
+
+  getBusiness: (id: string, token: string) => apiClient<any>(`/public/businesses/${id}`, { token }),
+
+  // invest: (id: string, amount: number, token: string) =>
+  //   apiClient(`/investor/businesses/${id}/invest`, { method: "POST", body: { amount }, token }),
+
+  // getInvestents: (token: string) => apiClient<any[]>("/investor/investments", { token }),
+}
 
 // Admin APIs
 export const adminApi = {

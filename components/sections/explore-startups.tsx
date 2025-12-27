@@ -1,113 +1,148 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { investorApi, publicApi } from "@/lib/api"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { DollarSign, MapPin } from "lucide-react"
 
-const startups = [
-  {
-    tag: "Almost Fully Funded",
-    image: "/images/start1.png",
-    name: "RISE Robotics",
-    title: "Electrifying heavy machines",
-    desc: " $22M raised from Techstars & The Engine (MIT’s VC). Enabling AI-ready, autonomous machines in a $600B market",
-    chips: ["VC-BACKED", "$1M+ REVENUE", "REPEAT FOUNDER"],
-  },
-  {
-    tag: "Trending This Week",
-    image: "/images/start2.png",
-    name: "Sen-Jam Pharmaceutical",
-    title: "Transforming Systematic Inflammation – The Hidden Killer – Into Longer, Healthier Lives",
-    desc: "$730M+ in exits by leadership team",
-    chips: ["VC-BACKED", "FEMALE FOUNDER", "BIOTECH"],
-  },
-  {
-    tag: "Trending This Week",
-    image: "/images/start3.png",
-    name: "Olympian Motors (YC W22)",
-    title: "Art-deco electric vehicles",
-    desc: "$61M revenue backlog with 780 pre-orders. Strategic partnerships with NVIDIA, Google, and Foxconn",
-    chips: ["VC-BACKED", "Y COMBINATOR", "TRANSPORTATION"],
-  },
-  {
-    tag: "Almost Fully Funded",
-    image: "/images/start4.png",
-    name: "Noble Mobile",
-    title: "Get Paid To Drive",
-    desc: "Co-founded by mobile carrier executives",
-    chips: ["VC-BACKED", "REPEAT FOUNDER"],
-  },
-]
+interface Business {
+  _id: string
+  title: string
+  category: string
+  description: string
+  needed_funds: number
+  image_url?: string
+  entrepreneur_id?: { name: string; location: string }
+}
 
 export default function ExploreStartups() {
+  const [businesses, setBusinesses] = useState<Business[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchPublicBusinesses = async () => {
+      try {
+        setIsLoading(true)
+        const data = await publicApi.getBusinesses("", {})
+        // Display only first 4 businesses on homepage
+        setBusinesses(data.slice(0, 4))
+      } catch (error) {
+        console.error("[v0] Failed to fetch public businesses:", error)
+        setBusinesses([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchPublicBusinesses()
+  }, [])
+
   return (
-    <section className="py-24 bg-white overflow-hidden">
-      <div className="max-w-300 mx-auto px-6">
+    <section className="py-24 bg-background overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-16">
-          <h2 className="text-[40px] font-semibold text-gray-900 mb-2">
-            Explore startups raising now
-          </h2>
-          <p className="text-gray-500">
-            Backed by top VCs and notable angels
+          <h2 className="text-4xl font-bold text-foreground mb-4">Explore Businesses Raising Now</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Discover promising investment opportunities from verified entrepreneurs
           </p>
         </div>
 
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {startups.map((s, i) => (
-            <motion.div
-              whileHover={{ y: -6 }}
-              key={i}
-              className="rounded-xl border border-gray-100 shadow-sm bg-white overflow-hidden"
-            >
-              {/* Image */}
-              <div className="relative h-45">
-                <img
-                  src={s.image}
-                  className="object-cover w-full h-full"
-                  alt=""
-                />
+        {/* Cards Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-0">
+                  <div className="h-48 bg-muted" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-4 bg-muted rounded w-3/4" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : businesses.length === 0 ? (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p className="text-muted-foreground">No businesses available yet. Check back soon!</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {businesses.map((business, i) => (
+              <motion.div
+                whileHover={{ y: -6 }}
+                key={business._id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <Card className="rounded-xl overflow-hidden h-full flex flex-col">
+                  <CardContent className="p-0 flex-1 flex flex-col">
+                    {/* Image */}
+                    <div className="relative h-48 bg-muted flex items-center justify-center overflow-hidden">
+                      {business.image_url ? (
+                        <img
+                          src={business.image_url || "/placeholder.svg"}
+                          alt={business.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-5xl font-bold text-muted-foreground/20">
+                          {business.title.charAt(0).toUpperCase()}
+                        </span>
+                      )}
+                    </div>
 
-                {/* Tag */}
-                <span className="absolute top-3 left-3 bg-[#FF5A5F] text-white text-xs font-semibold px-3 py-1 rounded-full">
-                  {s.tag}
-                </span>
+                    {/* Body */}
+                    <div className="pt-4 px-4 pb-4 flex-1 flex flex-col">
+                      <p className="text-xs text-muted-foreground mb-1 font-medium">{business.category}</p>
+                      <h3 className="font-semibold text-foreground leading-snug mb-2 line-clamp-2">{business.title}</h3>
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">{business.description}</p>
 
-                {/* Avatar bubble */}
-                <div className="absolute -bottom-4 right-4 w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-gray-300" />
-              </div>
+                      {/* Location if available */}
+                      {business.entrepreneur_id?.location && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-4">
+                          <MapPin className="h-3 w-3" />
+                          <span className="line-clamp-1">{business.entrepreneur_id.location}</span>
+                        </div>
+                      )}
 
-              {/* Body */}
-              <div className="pt-6 p-4">
-                <p className="text-xs text-gray-500 mb-1">{s.name}</p>
-                <h3 className="font-semibold text-gray-900 leading-snug mb-2">
-                  {s.title}
-                </h3>
-                <p className="text-sm text-gray-500 mb-4">
-                  {s.desc}
-                </p>
-
-                {/* Chips */}
-                <div className="flex flex-wrap gap-2">
-                  {s.chips.map((c, j) => (
-                    <span
-                      key={j}
-                      className="text-[10px] font-semibold px-2 py-0.75 rounded bg-gray-100 text-gray-600"
-                    >
-                      {c}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                      {/* Funding Amount */}
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                        <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+                          <DollarSign className="h-4 w-4" />
+                          {(business.needed_funds / 1000).toFixed(0)}K
+                        </span>
+                        <Link href={`/investor/browse/${business._id}`}>
+                          <Button size="sm" variant="ghost">
+                            View
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {/* CTA */}
-        <div className="flex justify-center mt-14">
-          <button className="bg-[#0F172A] text-white px-10 py-3 rounded-md text-sm font-semibold">
-            Explore Startups
-          </button>
-        </div>
+        {businesses.length > 0 && (
+          <div className="flex justify-center mt-14">
+            <Link href="/register?role=investor">
+              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Explore All Opportunities
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   )
