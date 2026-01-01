@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /entrepreneur/
+Disallow: /investor/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /verify/
+
+# Allow search engines to index public pages
+Allow: /
+Allow: /investor/browse/
+Allow: /investor/browse/*
+
+# Sitemaps
+Sitemap: https://skysolutions.com/sitemap.xml
+Sitemap: https://skysolutions.com/sitemap-businesses.xml
+
+# Crawl-delay
+Crawl-delay: 1
