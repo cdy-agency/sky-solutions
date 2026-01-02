@@ -70,7 +70,7 @@ export default function EntrepreneurDashboard() {
     total: businesses.length,
     active: businesses.filter((b) => b.status === "active").length,
     draft: businesses.filter((b) => b.status === "draft").length,
-    totalFunding: businesses.reduce((sum, b) => sum + b.needed_funds, 0),
+    totalFunding: businesses.reduce((sum, b) => sum + (b.total_shares*b.share_value), 0),
   }
 
   const showIntakeWarning = !isLoadingIntake && (!intakeStatus || intakeStatus.status !== "approved")
@@ -173,7 +173,7 @@ export default function EntrepreneurDashboard() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">${stats.totalFunding?.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-foreground"> Frw {stats.totalFunding?.toLocaleString()}</div>
             </CardContent>
           </Card>
         </div>
@@ -207,7 +207,7 @@ export default function EntrepreneurDashboard() {
                         <p className="text-sm text-muted-foreground">{business.category}</p>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground">${business.needed_funds?.toLocaleString()}</span>
+                        <span className="text-sm text-muted-foreground">Frw {(business.total_shares * business.share_value)?.toLocaleString()}</span>
                         <Badge
                           className={
                             business.status === "active"
