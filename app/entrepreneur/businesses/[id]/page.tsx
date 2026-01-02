@@ -139,7 +139,7 @@ export default function BusinessDetailPage() {
                   <p className="text-sm text-muted-foreground">Funding Required</p>
                   <p className="font-medium text-foreground flex items-center">
                     <DollarSign className="h-4 w-4 mr-1" />
-                    {business.needed_funds.toLocaleString()}
+                    {business.needed_funds?.toLocaleString()}
                   </p>
                 </div>
                 <div>
