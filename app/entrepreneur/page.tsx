@@ -173,7 +173,7 @@ export default function EntrepreneurDashboard() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-foreground">${stats.totalFunding.toLocaleString()}</div>
+              <div className="text-2xl font-bold text-foreground">${stats.totalFunding?.toLocaleString()}</div>
             </CardContent>
           </Card>
         </div>
@@ -207,7 +207,7 @@ export default function EntrepreneurDashboard() {
                         <p className="text-sm text-muted-foreground">{business.category}</p>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground">${business.needed_funds.toLocaleString()}</span>
+                        <span className="text-sm text-muted-foreground">${business.needed_funds?.toLocaleString()}</span>
                         <Badge
                           className={
                             business.status === "active"
