@@ -8,7 +8,9 @@ import { intakeApi } from "@/lib/api"
 import IdeationForm from "@/components/forms/ideation-form"
 import ActiveBusinessForm from "@/components/forms/active-business-form"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { AlertCircle } from "lucide-react"
+import Link from "next/link"
 
 export default function CreateIntakePage() {
   const router = useRouter()
@@ -28,6 +30,9 @@ export default function CreateIntakePage() {
             <div>
               <h3 className="font-semibold text-red-900">Invalid Form Type</h3>
               <p className="text-red-800 text-sm">Please select a valid form type</p>
+              <Link href="/entrepreneur/intakes/select" className="mt-2 inline-block">
+                <Button variant="outline" size="sm">Go to Selection Page</Button>
+              </Link>
             </div>
           </div>
         </Card>

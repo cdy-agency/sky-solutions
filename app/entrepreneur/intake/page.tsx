@@ -84,17 +84,12 @@ export default function IntakeForms() {
             <h1 className="text-3xl font-bold text-foreground">Intake Forms</h1>
             <p className="text-muted-foreground">Manage your business intake submissions</p>
           </div>
-          <div className="flex gap-2">
-            <Link href="/entrepreneur/intake/ideation">
-              <Button variant="outline">New Ideation Form</Button>
-            </Link>
-            <Link href="/entrepreneur/intake/active-business">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                New Active Business Form
-              </Button>
-            </Link>
-          </div>
+          <Link href="/entrepreneur/intakes/select">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Intake Form
+            </Button>
+          </Link>
         </div>
 
         <Card>
@@ -111,14 +106,9 @@ export default function IntakeForms() {
             ) : forms.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">No forms submitted yet</p>
-                <div className="flex justify-center gap-2">
-                  <Link href="/entrepreneur/intake/ideation">
-                    <Button variant="outline">Create Ideation Form</Button>
-                  </Link>
-                  <Link href="/entrepreneur/intake/active-business">
-                    <Button>Create Active Business Form</Button>
-                  </Link>
-                </div>
+                <Link href="/entrepreneur/intakes/select">
+                  <Button>Create Your First Intake Form</Button>
+                </Link>
               </div>
             ) : (
               <div className="space-y-4">

@@ -23,6 +23,32 @@ const INDUSTRIES = [
   "Other",
 ]
 const BUSINESS_STAGES = ["Pre-revenue", "Early Revenue (<6 months)", "Growth Stage (>6 months)", "Mature"]
+
+// Map display values to backend enum values
+const mapBusinessStageToEnum = (displayValue: string): string => {
+  const mapping: Record<string, string> = {
+    "pre-revenue": "pre-revenue",
+    "Pre-revenue": "pre-revenue",
+    "early revenue (<6 months)": "early",
+    "Early Revenue (<6 months)": "early",
+    "growth stage (>6 months)": "growth",
+    "Growth Stage (>6 months)": "growth",
+    "mature": "mature",
+    "Mature": "mature",
+  }
+  return mapping[displayValue] || displayValue
+}
+
+// Map backend enum values to display values (for editing)
+const mapBusinessStageFromEnum = (enumValue: string): string => {
+  const mapping: Record<string, string> = {
+    "pre-revenue": "Pre-revenue",
+    "early": "Early Revenue (<6 months)",
+    "growth": "Growth Stage (>6 months)",
+    "mature": "Mature",
+  }
+  return mapping[enumValue] || enumValue
+}
 const FUNDING_SOURCES = ["Bootstrapped", "Friends & Family", "Angel", "Grant", "Other"]
 const FUNDING_TYPES = ["Equity", "Debt", "Partner", "Grant", "Other"]
 const INVESTOR_TYPES = ["Angel Investor", "Shareholder", "Paternal", "Bank Loan", "Grant", "Other"]
@@ -126,6 +152,8 @@ export default function ActiveBusinessForm({ onSubmit, isLoading, initialData }:
     agreed_to_fees: false,
     agreed_to_confidentiality: false,
     ...(initialData || {}),
+    // Map business_stage from enum to display value if editing (must be after spread to override)
+    business_stage: initialData?.business_stage ? mapBusinessStageFromEnum(initialData.business_stage) : "",
   })
 
   // Initialize team members from initialData if provided
@@ -173,7 +201,13 @@ export default function ActiveBusinessForm({ onSubmit, isLoading, initialData }:
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit({ ...formData, team_members: teamMembers })
+    // Map business_stage to backend enum value
+    const submitData = {
+      ...formData,
+      business_stage: formData.business_stage ? mapBusinessStageToEnum(formData.business_stage) : undefined,
+      team_members: teamMembers,
+    }
+    onSubmit(submitData)
   }
 
   const steps = [
@@ -365,7 +399,7 @@ export default function ActiveBusinessForm({ onSubmit, isLoading, initialData }:
                   </SelectTrigger>
                   <SelectContent>
                     {BUSINESS_STAGES.map((stage) => (
-                      <SelectItem key={stage} value={stage.toLowerCase()}>
+                      <SelectItem key={stage} value={stage}>
                         {stage}
                       </SelectItem>
                     ))}

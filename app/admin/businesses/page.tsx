@@ -759,7 +759,7 @@ export default function AdminBusinessesPage() {
 
       {/* Create Public Business Dialog */}
       <Dialog open={createPublicDialog} onOpenChange={setCreatePublicDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Public Business Listing</DialogTitle>
             <DialogDescription>Add a new business opportunity for investors to view</DialogDescription>

@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useAuth } from "@/lib/auth-context"
 import { libraryApi } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, FolderPlus, Upload, Download, Trash2, File, Folder } from "lucide-react"
+import { Loader2, FolderPlus, Upload, Download, Trash2, File, Folder, Edit2, Move, MoreVertical } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Folder {
   _id: string
@@ -52,6 +53,29 @@ export default function AdminLibraryPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
+  // Sorting state
+  const [sortBy, setSortBy] = useState<"name" | "date" | "size" | "type">("date")
+
+  // Rename state
+  const [renameDialog, setRenameDialog] = useState(false)
+  const [renameType, setRenameType] = useState<"folder" | "document" | null>(null)
+  const [renameId, setRenameId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+  const [isRenaming, setIsRenaming] = useState(false)
+
+  // Move state
+  const [moveDialog, setMoveDialog] = useState(false)
+  const [moveType, setMoveType] = useState<"folder" | "document" | null>(null)
+  const [moveId, setMoveId] = useState<string | null>(null)
+  const [moveTargetFolder, setMoveTargetFolder] = useState<string | null>(null)
+  const [allFolders, setAllFolders] = useState<Folder[]>([])
+  const [isMoving, setIsMoving] = useState(false)
+
+  // Delete folder state
+  const [deleteFolderDialog, setDeleteFolderDialog] = useState(false)
+  const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null)
+  const [isDeletingFolder, setIsDeletingFolder] = useState(false)
+
   const fetchFolders = async (parentId: string | null = null) => {
     if (!token) return
     try {
@@ -78,7 +102,7 @@ export default function AdminLibraryPage() {
     if (!token) return
     setIsLoadingDocs(true)
     try {
-      const data = await libraryApi.getDocuments(folderId, token)
+      const data = await libraryApi.getDocuments(folderId, token, 1, 100, sortBy)
       setDocuments(data.documents || [])
     } catch (error) {
       console.error("Failed to fetch documents:", error)
@@ -87,6 +111,26 @@ export default function AdminLibraryPage() {
       setIsLoadingDocs(false)
     }
   }
+
+  const fetchAllFolders = async () => {
+    if (!token) return
+    try {
+      const data = await libraryApi.getFolders(token, "?sort=name")
+      setAllFolders(data)
+    } catch (error) {
+      console.error("Failed to fetch all folders:", error)
+    }
+  }
+
+  useEffect(() => {
+    if (selectedFolder) {
+      fetchDocuments(selectedFolder._id)
+    }
+  }, [sortBy, selectedFolder])
+
+  useEffect(() => {
+    fetchAllFolders()
+  }, [token, folders])
 
   const handleCreateFolder = async () => {
     if (!folderName || !token) return
@@ -155,12 +199,113 @@ export default function AdminLibraryPage() {
 
   const handleDeleteDocument = async (documentId: string) => {
     if (!token || !selectedFolder) return
+    if (!confirm("Are you sure you want to delete this document?")) return
     try {
       await libraryApi.deleteDocument(documentId, token)
       toast({ title: "Success", description: "Document deleted" })
       fetchDocuments(selectedFolder._id)
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" })
+    }
+  }
+
+  const handleRename = (type: "folder" | "document", id: string, currentName: string) => {
+    setRenameType(type)
+    setRenameId(id)
+    setRenameValue(currentName)
+    setRenameDialog(true)
+  }
+
+  const handleRenameSubmit = async () => {
+    if (!renameId || !renameValue || !token) return
+    setIsRenaming(true)
+    try {
+      if (renameType === "folder") {
+        await libraryApi.renameFolder(renameId, renameValue, token)
+        toast({ title: "Success", description: "Folder renamed successfully" })
+        fetchFolders(currentParentId)
+        fetchAllFolders()
+      } else {
+        await libraryApi.renameDocument(renameId, renameValue, token)
+        toast({ title: "Success", description: "Document renamed successfully" })
+        if (selectedFolder) fetchDocuments(selectedFolder._id)
+      }
+      setRenameDialog(false)
+      setRenameValue("")
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setIsRenaming(false)
+    }
+  }
+
+  const handleMove = (type: "folder" | "document", id: string) => {
+    setMoveType(type)
+    setMoveId(id)
+    setMoveTargetFolder(null)
+    setMoveDialog(true)
+    fetchAllFolders()
+  }
+
+  const handleMoveSubmit = async () => {
+    if (!moveId || !token) return
+    setIsMoving(true)
+    try {
+      if (moveType === "folder") {
+        await libraryApi.moveFolder(moveId, moveTargetFolder, token)
+        toast({ title: "Success", description: "Folder moved successfully" })
+        fetchFolders(currentParentId)
+        fetchAllFolders()
+      } else {
+        if (!moveTargetFolder) {
+          toast({ title: "Error", description: "Please select a target folder", variant: "destructive" })
+          return
+        }
+        await libraryApi.moveDocument(moveId, moveTargetFolder, token)
+        toast({ title: "Success", description: "Document moved successfully" })
+        if (selectedFolder) fetchDocuments(selectedFolder._id)
+      }
+      setMoveDialog(false)
+      setMoveTargetFolder(null)
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setIsMoving(false)
+    }
+  }
+
+  const handleDeleteFolder = async () => {
+    if (!folderToDelete || !token) return
+    setIsDeletingFolder(true)
+    try {
+      await libraryApi.deleteFolder(folderToDelete._id, token)
+      toast({ title: "Success", description: "Folder deleted successfully" })
+      setDeleteFolderDialog(false)
+      setFolderToDelete(null)
+      fetchFolders(currentParentId)
+      fetchAllFolders()
+      if (selectedFolder?._id === folderToDelete._id) {
+        setSelectedFolder(null)
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" })
+    } finally {
+      setIsDeletingFolder(false)
+    }
+  }
+
+  const handleDownload = async (documentId: string, fileName: string) => {
+    if (!token) return
+    try {
+      const data = await libraryApi.downloadDocument(documentId, token)
+      const link = document.createElement("a")
+      link.href = data.download_url
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to download file", variant: "destructive" })
     }
   }
 
@@ -214,19 +359,47 @@ export default function AdminLibraryPage() {
                       </button>
                     )}
                     {folders.map((folder) => (
-                      <button
+                      <div
                         key={folder._id}
-                        onClick={() => handleFolderClick(folder)}
-                        onDoubleClick={() => handleEnterFolder(folder)}
-                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                        className={`group flex items-center gap-2 rounded-md text-sm transition-colors ${
                           selectedFolder?._id === folder._id
                             ? "bg-[#1B4F91] text-white"
                             : "hover:bg-muted text-foreground"
                         }`}
                       >
-                        <Folder className="h-4 w-4" />
-                        {folder.name}
-                      </button>
+                        <button
+                          onClick={() => handleFolderClick(folder)}
+                          onDoubleClick={() => handleEnterFolder(folder)}
+                          className="flex-1 text-left px-3 py-2 flex items-center gap-2"
+                        >
+                          <Folder className="h-4 w-4" />
+                          {folder.name}
+                        </button>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRename("folder", folder._id, folder.name)
+                            }}
+                            className="p-1 hover:bg-black/10 rounded"
+                            title="Rename"
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </button>
+                          
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setFolderToDelete(folder)
+                              setDeleteFolderDialog(true)
+                            }}
+                            className="p-1 hover:bg-red-100 rounded"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-3 w-3 text-red-500" />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </>
                 )}
@@ -245,7 +418,18 @@ export default function AdminLibraryPage() {
                       <p className="text-sm text-muted-foreground">{selectedFolder.description}</p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
+                    <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Sort by" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name">Name</SelectItem>
+                        <SelectItem value="date">Date</SelectItem>
+                        <SelectItem value="size">Size</SelectItem>
+                        <SelectItem value="type">Type</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -297,17 +481,31 @@ export default function AdminLibraryPage() {
                               </div>
                             </div>
                             <div className="flex gap-2">
-                              <a
-                                href={doc.file_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                onClick={() => handleDownload(doc._id, doc.file_name)}
                                 className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted"
+                                title="Download"
                               >
                                 <Download className="h-4 w-4 text-[#1B4F91]" />
-                              </a>
+                              </button>
+                              <button
+                                onClick={() => handleRename("document", doc._id, doc.file_name)}
+                                className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted"
+                                title="Rename"
+                              >
+                                <Edit2 className="h-4 w-4 text-[#1B4F91]" />
+                              </button>
+                                {/* <button
+                                  onClick={() => handleMove("document", doc._id)}
+                                  className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted"
+                                  title="Move"
+                                >
+                                  <Move className="h-4 w-4 text-[#1B4F91]" />
+                                </button> */}
                               <button
                                 onClick={() => handleDeleteDocument(doc._id)}
                                 className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-red-100"
+                                title="Delete"
                               >
                                 <Trash2 className="h-4 w-4 text-red-500" />
                               </button>
@@ -389,6 +587,99 @@ export default function AdminLibraryPage() {
             <Button onClick={handleUploadFile} disabled={!uploadFile || isUploading} className="bg-[#1B4F91]">
               {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Upload
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={renameDialog} onOpenChange={setRenameDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename {renameType === "folder" ? "Folder" : "Document"}</DialogTitle>
+            <DialogDescription>Enter a new name for this {renameType}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rename-input">Name *</Label>
+              <Input
+                id="rename-input"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameSubmit()
+                }}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setRenameDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRenameSubmit} disabled={!renameValue || isRenaming} className="bg-[#1B4F91]">
+              {isRenaming && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Rename
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Dialog */}
+      <Dialog open={moveDialog} onOpenChange={setMoveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Move {moveType === "folder" ? "Folder" : "Document"}</DialogTitle>
+            <DialogDescription>Select the destination folder</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="move-target">Target Folder</Label>
+              <Select value={moveTargetFolder || ""} onValueChange={setMoveTargetFolder}>
+                <SelectTrigger id="move-target">
+                  <SelectValue placeholder="Select folder (or leave empty for root)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Root (No parent)</SelectItem>
+                  {allFolders
+                    .filter((f) => moveType === "folder" && moveId ? f._id !== moveId : true)
+                    .map((folder) => (
+                      <SelectItem key={folder._id} value={folder._id}>
+                        {folder.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setMoveDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleMoveSubmit} disabled={isMoving} className="bg-[#1B4F91]">
+              {isMoving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Move
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Folder Dialog */}
+      <Dialog open={deleteFolderDialog} onOpenChange={setDeleteFolderDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Folder</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{folderToDelete?.name}"? This action cannot be undone. The folder must be
+              empty (no subfolders or documents).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setDeleteFolderDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleDeleteFolder} disabled={isDeletingFolder} variant="destructive">
+              {isDeletingFolder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete
             </Button>
           </div>
         </DialogContent>

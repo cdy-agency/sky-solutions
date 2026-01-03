@@ -120,7 +120,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1">
+          <nav className="flex-1 p-4 space-y-1 max-h-[calc(100vh-10rem)] overflow-y-auto">
             {items.map((item) => (
               <Link
                 key={item.href}

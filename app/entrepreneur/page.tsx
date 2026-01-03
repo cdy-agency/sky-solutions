@@ -108,7 +108,7 @@ export default function EntrepreneurDashboard() {
               {!intakeStatus ? (
                 <>
                   Please complete your intake form to access all features.{" "}
-                  <Link href="/entrepreneur/intakes/create/ideation" className="font-medium underline">
+                  <Link href="/entrepreneur/intakes/select" className="font-medium underline">
                     Complete Intake Form
                   </Link>
                 </>

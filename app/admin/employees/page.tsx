@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/auth-context"
-import { apiClient, adminApi } from "@/lib/api"
+import { apiClient } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Users, UserCheck, Clock, Loader2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -32,11 +32,6 @@ interface Employee {
   status: "active" | "inactive" | "on_leave"
 }
 
-interface Business {
-  _id: string
-  title: string
-}
-
 export default function EmployeesPage() {
   const { user, token } = useAuth()
   const { toast } = useToast()
@@ -48,9 +43,7 @@ export default function EmployeesPage() {
   const [filters, setFilters] = useState({ status: "all", search: "" })
   const [showAddForm, setShowAddForm] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [businesses, setBusinesses] = useState<Business[]>([])
   const [formData, setFormData] = useState({
-    businessId: "",
     name: "",
     email: "",
     phone: "",
@@ -67,23 +60,8 @@ export default function EmployeesPage() {
     passport_number: "",
   })
 
-  useEffect(() => {
-    const fetchBusinesses = async () => {
-      if (!token) return
-      try {
-        const [businessData, publicData] = await Promise.all([
-          adminApi.getBusinesses(token, { status: "approved" }),
-          adminApi.getPublicBusinesses(token),
-        ])
-        const businessesList = businessData.businesses || businessData || []
-        const publicList = publicData.businesses || []
-        setBusinesses([...businessesList, ...publicList])
-      } catch (error) {
-        console.error("Failed to fetch businesses:", error)
-      }
-    }
-    fetchBusinesses()
-  }, [token])
+
+ 
 
   const fetchEmployees = async () => {
     if (!token) return
@@ -96,7 +74,7 @@ export default function EmployeesPage() {
         ...(filters.search && { search: filters.search }),
       })
 
-      const data = await apiClient(`/employees?${params}`, { token })
+      const data = await apiClient<{ employees: Employee[]; pagination: { total: number; pages: number } }>(`/employees?${params}`, { token })
       setEmployees(data.employees)
       setTotalPages(data.pagination.pages)
     } catch (error) {
@@ -112,6 +90,62 @@ export default function EmployeesPage() {
 
   const activeEmployees = employees.filter((e) => e.status === "active").length
   const totalEmployees = employees.length
+
+  const handleAddEmployee = async () => {
+    if (!token) return
+    if ( !formData.name || !formData.email || !formData.phone || !formData.position || !formData.hire_date || !formData.employment_type || !formData.salary) {
+      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" })
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await apiClient("/employees", {
+        method: "POST",
+        body: {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          position: formData.position,
+          department: formData.department,
+          hire_date: formData.hire_date,
+          employment_type: formData.employment_type,
+          salary: formData.salary,
+          currency: formData.currency,
+          benefits: formData.benefits,
+          emergency_contact: formData.emergency_contact,
+          emergency_contact_phone: formData.emergency_contact_phone,
+          national_id: formData.national_id,
+          passport_number: formData.passport_number,
+        },
+        token,
+      })
+
+      toast({ title: "Success", description: "Employee added successfully" })
+      setShowAddForm(false)
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        position: "",
+        department: "",
+        hire_date: new Date().toISOString().split("T")[0],
+        employment_type: "full-time",
+        salary: "",
+        currency: "RWF",
+        benefits: "",
+        emergency_contact: "",
+        emergency_contact_phone: "",
+        national_id: "",
+        passport_number: "",
+      })
+      fetchEmployees()
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to add employee", variant: "destructive" })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <DashboardLayout>
@@ -272,22 +306,7 @@ export default function EmployeesPage() {
               <DialogDescription>Enter the employee details below</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="businessId">Business *</Label>
-                <select
-                  id="businessId"
-                  className="w-full px-3 py-2 border rounded-md"
-                  value={formData.businessId}
-                  onChange={(e) => setFormData({ ...formData, businessId: e.target.value })}
-                >
-                  <option value="">Select business</option>
-                  {businesses.map((business) => (
-                    <option key={business._id} value={business._id}>
-                      {business.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+             
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Full Name *</Label>

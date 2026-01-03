@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/auth-context"
-import { apiClient } from "@/lib/api"
+import { apiClient, adminApi } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { Plus, Download, TrendingUp, DollarSign, Loader2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -58,6 +58,8 @@ export default function ExpensesPage() {
     payment_method: "",
     receipt: null as File | null,
   })
+
+ 
 
   const fetchExpenses = async () => {
     if (!token) return
@@ -125,7 +127,7 @@ export default function ExpensesPage() {
 
   const handleAddExpense = async () => {
     if (!token) return
-    if (!formData.category || !formData.amount || !formData.date || !formData.description || !formData.payment_method) {
+    if ( !formData.category || !formData.amount || !formData.date || !formData.description || !formData.payment_method) {
       toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" })
       return
     }
@@ -174,7 +176,7 @@ export default function ExpensesPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Expense Management</h1>
-            <p className="text-muted-foreground">Track and manage business expenses</p>
+            <p className="text-muted-foreground">Track and manage  expenses</p>
           </div>
           <div className="flex gap-2">
             <Button onClick={handleExportCSV} variant="outline">

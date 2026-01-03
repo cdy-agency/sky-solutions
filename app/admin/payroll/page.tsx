@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -40,11 +41,6 @@ interface Invoice {
   status: "pending" | "paid" | "overdue"
 }
 
-interface Business {
-  _id: string
-  title: string
-}
-
 interface Employee {
   _id: string
   name: string
@@ -66,10 +62,8 @@ export default function PayrollPage() {
   const [showPayrollForm, setShowPayrollForm] = useState(false)
   const [showInvoiceForm, setShowInvoiceForm] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [businesses, setBusinesses] = useState<Business[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [payrollFormData, setPayrollFormData] = useState({
-    businessId: "",
     employee_id: "",
     period_start: new Date().toISOString().split("T")[0],
     period_end: new Date().toISOString().split("T")[0],
@@ -79,7 +73,6 @@ export default function PayrollPage() {
     notes: "",
   })
   const [invoiceFormData, setInvoiceFormData] = useState({
-    businessId: "",
     vendor_name: "",
     amount: "",
     currency: "RWF",
@@ -91,33 +84,21 @@ export default function PayrollPage() {
     notes: "",
   })
 
-  useEffect(() => {
-    const fetchBusinesses = async () => {
-      if (!token) return
-      try {
-        const [businessData, publicData] = await Promise.all([
-          adminApi.getBusinesses(token, { status: "approved" }),
-          adminApi.getPublicBusinesses(token),
-        ])
-        const businessesList = businessData.businesses || businessData || []
-        const publicList = publicData.businesses || []
-        setBusinesses([...businessesList, ...publicList])
-      } catch (error) {
-        console.error("Failed to fetch businesses:", error)
-      }
-    }
-    fetchBusinesses()
-  }, [token])
-
-  const fetchEmployeesForBusiness = async (businessId: string) => {
-    if (!token || !businessId) return
+  const fetchEmployees = async () => {
+    if (!token) return
     try {
-      const data = await apiClient(`/employees?businessId=${businessId}`, { token })
+      const data = await apiClient<{ employees: Employee[] }>("/employees?limit=1000", { token })
       setEmployees(data.employees || [])
     } catch (error) {
       console.error("Failed to fetch employees:", error)
+      toast({ title: "Error", description: "Failed to load employees", variant: "destructive" })
     }
   }
+
+  useEffect(() => {
+    fetchEmployees()
+  }, [token])
+
 
   const fetchPayrolls = async () => {
     if (!token) return
@@ -129,7 +110,7 @@ export default function PayrollPage() {
         status: filters.status,
       })
 
-      const data = await apiClient(`/payroll?${params}`, { token })
+      const data = await apiClient<{ payrolls: Payroll[]; pagination: { total: number; pages: number } }>(`/payroll?${params}`, { token })
       setPayrolls(data.payrolls)
       setTotalPages(data.pagination.pages)
     } catch (error) {
@@ -149,7 +130,7 @@ export default function PayrollPage() {
         status: filters.status,
       })
 
-      const data = await apiClient(`/payroll/invoices?${params}`, { token })
+      const data = await apiClient<{ invoices: Invoice[]; pagination: { total: number; pages: number } }>(`/payroll/invoices?${params}`, { token })
       setInvoices(data.invoices)
       setTotalPages(data.pagination.pages)
     } catch (error) {
@@ -167,6 +148,94 @@ export default function PayrollPage() {
   const totalPayroll = payrolls.reduce((sum, p) => sum + p.net_amount, 0)
   const paidPayroll = payrolls.filter((p) => p.status === "paid").reduce((sum, p) => sum + p.net_amount, 0)
   const pendingInvoices = invoices.filter((i) => i.status === "pending").length
+
+  const handleGeneratePayroll = async () => {
+    if (!token) return
+    if (!payrollFormData.employee_id || !payrollFormData.period_start || !payrollFormData.period_end || !payrollFormData.salary) {
+      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" })
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await apiClient("/payroll", {
+        method: "POST",
+        body: {
+          employee_id: payrollFormData.employee_id,
+          period_start: payrollFormData.period_start,
+          period_end: payrollFormData.period_end,
+          salary: payrollFormData.salary,
+          deductions: payrollFormData.deductions,
+          taxes: payrollFormData.taxes,
+          notes: payrollFormData.notes,
+        },
+        token,
+      })
+
+      toast({ title: "Success", description: "Payroll generated successfully" })
+      setShowPayrollForm(false)
+      setPayrollFormData({
+        employee_id: "",
+        period_start: new Date().toISOString().split("T")[0],
+        period_end: new Date().toISOString().split("T")[0],
+        salary: "",
+        deductions: "0",
+        taxes: "0",
+        notes: "",
+      })
+      fetchPayrolls()
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to generate payroll", variant: "destructive" })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleAddInvoice = async () => {
+    if (!token) return
+    if (!invoiceFormData.vendor_name || !invoiceFormData.amount || !invoiceFormData.due_date || !invoiceFormData.category || !invoiceFormData.description) {
+      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" })
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      await apiClient("/payroll/invoices", {
+        method: "POST",
+        body: {
+          vendor_name: invoiceFormData.vendor_name,
+          amount: invoiceFormData.amount,
+          currency: invoiceFormData.currency,
+          due_date: invoiceFormData.due_date,
+          category: invoiceFormData.category,
+          description: invoiceFormData.description,
+          recurring: invoiceFormData.recurring,
+          frequency: invoiceFormData.frequency,
+          notes: invoiceFormData.notes,
+        },
+        token,
+      })
+
+      toast({ title: "Success", description: "Invoice added successfully" })
+      setShowInvoiceForm(false)
+      setInvoiceFormData({
+        vendor_name: "",
+        amount: "",
+        currency: "RWF",
+        due_date: new Date().toISOString().split("T")[0],
+        category: "",
+        description: "",
+        recurring: false,
+        frequency: "",
+        notes: "",
+      })
+      fetchInvoices()
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to add invoice", variant: "destructive" })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <DashboardLayout>
@@ -402,6 +471,203 @@ export default function PayrollPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Generate Payroll Dialog */}
+        <Dialog open={showPayrollForm} onOpenChange={setShowPayrollForm}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Generate Payslip</DialogTitle>
+              <DialogDescription>Create a new payroll entry for an employee</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                  <Label htmlFor="payroll-employee">Employee *</Label>
+                <select
+                  id="payroll-employee"
+                  className="w-full px-3 py-2 border rounded-md"
+                  value={payrollFormData.employee_id}
+                  onChange={(e) => setPayrollFormData({ ...payrollFormData, employee_id: e.target.value })}
+                >
+                  <option value="">Select employee</option>
+                  {employees.map((employee) => (
+                    <option key={employee._id} value={employee._id}>
+                      {employee.name} - {employee.position}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                  <Label htmlFor="payroll-period-start">Period Start *</Label>
+                  <Input
+                    id="payroll-period-start"
+                    type="date"
+                    value={payrollFormData.period_start}
+                    onChange={(e) => setPayrollFormData({ ...payrollFormData, period_start: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="payroll-period-end">Period End *</Label>
+                  <Input
+                    id="payroll-period-end"
+                    type="date"
+                    value={payrollFormData.period_end}
+                    onChange={(e) => setPayrollFormData({ ...payrollFormData, period_end: e.target.value })}
+                  />
+                  </div>
+                </div>  
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="salary">Salary *</Label>
+                  <Input
+                    id="salary"
+                    type="number"
+                    value={payrollFormData.salary}
+                    onChange={(e) => setPayrollFormData({ ...payrollFormData, salary: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="deductions">Deductions</Label>
+                  <Input
+                    id="deductions"
+                    type="number"
+                    value={payrollFormData.deductions}
+                    onChange={(e) => setPayrollFormData({ ...payrollFormData, deductions: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="taxes">Taxes</Label>
+                  <Input
+                    id="taxes"
+                    type="number"
+                    value={payrollFormData.taxes}
+                    onChange={(e) => setPayrollFormData({ ...payrollFormData, taxes: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="payroll-notes">Notes</Label>
+                <Textarea
+                  id="payroll-notes"
+                  value={payrollFormData.notes}
+                  onChange={(e) => setPayrollFormData({ ...payrollFormData, notes: e.target.value })}
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowPayrollForm(false)} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button onClick={handleGeneratePayroll} disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Generate Payslip
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Invoice Dialog */}
+        <Dialog open={showInvoiceForm} onOpenChange={setShowInvoiceForm}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add Invoice</DialogTitle>
+              <DialogDescription>Add a new vendor invoice</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="invoice-vendor-name">Vendor Name *</Label>
+                <Input
+                  id="invoice-vendor-name"
+                  value={invoiceFormData.vendor_name}
+                  onChange={(e) => setInvoiceFormData({ ...invoiceFormData, vendor_name: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="invoice-amount">Amount *</Label>
+                  <Input
+                    id="invoice-amount"
+                    type="number"
+                    value={invoiceFormData.amount}
+                    onChange={(e) => setInvoiceFormData({ ...invoiceFormData, amount: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="invoice-category">Category *</Label>
+                  <Input
+                    id="invoice-category"
+                    value={invoiceFormData.category}
+                    onChange={(e) => setInvoiceFormData({ ...invoiceFormData, category: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="invoice-due-date">Due Date *</Label>
+                  <Input
+                    id="invoice-due-date"
+                    type="date"
+                    value={invoiceFormData.due_date}
+                    onChange={(e) => setInvoiceFormData({ ...invoiceFormData, due_date: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="invoice-description">Description *</Label>
+                <Textarea
+                  id="invoice-description"
+                  value={invoiceFormData.description}
+                  onChange={(e) => setInvoiceFormData({ ...invoiceFormData, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={invoiceFormData.recurring}
+                    onChange={(e) => setInvoiceFormData({ ...invoiceFormData, recurring: e.target.checked })}
+                  />
+                  <span>Recurring Invoice</span>
+                </label>
+                {invoiceFormData.recurring && (
+                  <select
+                    className="px-3 py-2 border rounded-md"
+                    value={invoiceFormData.frequency}
+                    onChange={(e) => setInvoiceFormData({ ...invoiceFormData, frequency: e.target.value })}
+                  >
+                    <option value="">Select frequency</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="invoice-notes">Notes</Label>
+                <Textarea
+                  id="invoice-notes"
+                  value={invoiceFormData.notes}
+                  onChange={(e) => setInvoiceFormData({ ...invoiceFormData, notes: e.target.value })}
+                  rows={2}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowInvoiceForm(false)} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddInvoice} disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Add Invoice
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   )

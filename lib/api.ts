@@ -311,34 +311,44 @@ export const shareApi = {
 
 // Library and document management APIs
 export const libraryApi = {
-  createFolder: (data: { name: string; description?: string }, token: string) =>
+  createFolder: (data: { name: string; description?: string; parent_id?: string }, token: string) =>
     apiClient("/library/folders", { method: "POST", body: data, token }),
 
   getFolders: (token: string, query?: string) =>
     apiClient<any[]>(`/library/folders${query || ""}`, { method: "GET", token }),
 
+  getFolder: (folderId: string, token: string) =>
+    apiClient<any>(`/library/folders/${folderId}`, { method: "GET", token }),
+
+  renameFolder: (folderId: string, name: string, token: string) =>
+    apiClient(`/library/folders/${folderId}/rename`, { method: "PATCH", body: { name }, token }),
+
+  moveFolder: (folderId: string, parent_id: string | null, token: string) =>
+    apiClient(`/library/folders/${folderId}/move`, { method: "PATCH", body: { parent_id }, token }),
+
+  deleteFolder: (folderId: string, token: string) =>
+    apiClient(`/library/folders/${folderId}`, { method: "DELETE", token }),
+
   uploadDocument: (formData: FormData, token: string) =>
     apiClient("/library/upload", { method: "POST", body: formData, token, isFormData: true }),
 
-  getDocuments: (folderId: string, token: string, page = 1, limit = 10) =>
-    apiClient<any>(`/library/documents/${folderId}?page=${page}&limit=${limit}`, { method: "GET", token }),
+  getDocuments: (folderId: string, token: string, page = 1, limit = 10, sort = "date") =>
+    apiClient<any>(`/library/documents/${folderId}?page=${page}&limit=${limit}&sort=${sort}`, { method: "GET", token }),
+
+  getDocument: (documentId: string, token: string) =>
+    apiClient<any>(`/library/documents/${documentId}`, { method: "GET", token }),
+
+  renameDocument: (documentId: string, file_name: string, token: string) =>
+    apiClient(`/library/documents/${documentId}/rename`, { method: "PATCH", body: { file_name }, token }),
+
+  moveDocument: (documentId: string, folder_id: string, token: string) =>
+    apiClient(`/library/documents/${documentId}/move`, { method: "PATCH", body: { folder_id }, token }),
+
+  downloadDocument: (documentId: string, token: string) =>
+    apiClient<any>(`/library/documents/${documentId}/download`, { method: "GET", token }),
 
   deleteDocument: (documentId: string, token: string) =>
-    apiClient(`/library/${documentId}`, { method: "DELETE", token }),
-
-  uploadVersion: (documentId: string, formData: FormData, token: string, changeDescription?: string) =>
-    apiClient(`/library/${documentId}/version`, {
-      method: "POST",
-      body: { ...formData, change_description: changeDescription },
-      token,
-      isFormData: true,
-    }),
-
-  getVersions: (documentId: string, token: string) =>
-    apiClient<any>(`/library/${documentId}/versions`, { method: "GET", token }),
-
-  restoreVersion: (documentId: string, versionId: string, token: string) =>
-    apiClient(`/library/${documentId}/versions/${versionId}/restore`, { method: "POST", token }),
+    apiClient(`/library/documents/${documentId}`, { method: "DELETE", token }),
 }
 
 // Notification APIs
