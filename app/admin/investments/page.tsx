@@ -120,7 +120,7 @@ export default function AdminInvestmentsPage() {
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4" />${investment.amount.toLocaleString()}
+                          {investment.amount.toLocaleString()} Frw
                         </span>
                         <span>Investor: {investment.investor_id?.name}</span>
                         <span>Category: {investment.business_id?.category}</span>

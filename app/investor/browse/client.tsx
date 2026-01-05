@@ -163,7 +163,7 @@ export default function BrowseBusinessesPageClient() {
                         </span>
                         {business.share_value && (
                           <span className="text-sm text-muted-foreground">
-                            ${business.share_value.toLocaleString()}/share
+                            {business.share_value.toLocaleString()} Frw/share
                           </span>
                         )}
                       </div>

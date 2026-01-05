@@ -118,8 +118,7 @@ export default function InvestorInvestmentsPage() {
                     <div className="text-right">
                       <p className="text-sm text-muted-foreground">Investment Amount</p>
                       <p className="text-2xl font-bold text-foreground flex items-center justify-end">
-                        <DollarSign className="h-5 w-5" />
-                        {investment.amount.toLocaleString()}
+                        {investment.amount.toLocaleString()} Frw
                       </p>
                     </div>
                   </div>

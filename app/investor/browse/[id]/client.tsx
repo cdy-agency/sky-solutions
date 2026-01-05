@@ -225,7 +225,7 @@ export default function BusinessDetailPageClient() {
                   </p>
                   {business.share_value && (
                     <p className="text-sm text-muted-foreground mt-1">
-                      ${business.share_value.toLocaleString()} per share
+                      {business.share_value.toLocaleString()} Frw per share
                     </p>
                   )}
                 </div>
@@ -237,7 +237,7 @@ export default function BusinessDetailPageClient() {
                     </p>
                     {business.share_value && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        ${(business.minimum_shares_per_request * business.share_value).toLocaleString()} minimum
+                        {(business.minimum_shares_per_request * business.share_value).toLocaleString()} Frw minimum
                       </p>
                     )}
                   </div>
@@ -288,14 +288,14 @@ export default function BusinessDetailPageClient() {
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-sm text-muted-foreground">Price per share:</span>
                             <span className="font-medium text-foreground">
-                              ${business.share_value.toLocaleString()}
+                              {business.share_value.toLocaleString()} Frw
                             </span>
                           </div>
                           <div className="border-t pt-2 mt-2">
                             <div className="flex justify-between items-center">
                               <span className="text-sm font-medium text-foreground">Total Amount:</span>
                               <span className="text-lg font-bold text-[#1B4F91]">
-                                ${calculatedAmount.toLocaleString()}
+                                {calculatedAmount.toLocaleString()} Frw
                               </span>
                             </div>
                           </div>

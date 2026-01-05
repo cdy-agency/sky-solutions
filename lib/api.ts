@@ -122,6 +122,8 @@ export const publicApi = {
   getCategories: () => apiClient<any[]>(`/public/categories`),
 
   getStats: () => apiClient<any>(`/public/stats`),
+
+  getTerms: () => apiClient<any>(`/public/terms`),
 }
 
 // Entrepreneur APIs
@@ -289,6 +291,11 @@ export const adminApi = {
 
   updateIntakeStatus: (id: string, data: { status: string; rejection_reason?: string }, token: string) =>
     apiClient(`/admin/intakes/${id}/status`, { method: "PATCH", body: data, token }),
+
+  getTerms: (token: string) => apiClient<any>(`/admin/terms`, { token }),
+
+  updateTerms: (data: { general: string; entrepreneur: string; investor: string }, token: string) =>
+    apiClient(`/admin/terms`, { method: "PUT", body: data, token }),
 }
 
 // Share request APIs
@@ -376,14 +383,46 @@ export const notificationApi = {
   ) => apiClient("/notifications/preferences", { method: "PUT", body: data, token }),
 }
 
-// Expense, Employee, and Payroll APIs
+// Expense APIs
 export const expenseApi = {
-  getExpenses: (businessId: string, filters: any, token: string) =>
-    apiClient(`/expenses/${businessId}`, { token, method: "GET" }),
-  createExpense: (businessId: string, data: FormData, token: string) =>
-    apiClient(`/expenses/${businessId}`, { token, method: "POST", body: data, isFormData: true }),
-  getAnalytics: (businessId: string, token: string) =>
-    apiClient(`/expenses/${businessId}/analytics/summary`, { token, method: "GET" }),
+  getExpenses: (filters: any, token: string) => {
+    const params = new URLSearchParams()
+    Object.keys(filters).forEach((key) => {
+      if (filters[key] && filters[key] !== "all") {
+        params.append(key, filters[key])
+      }
+    })
+    return apiClient(`/expenses?${params.toString()}`, { token, method: "GET" })
+  },
+  getActiveExpenses: (token: string) => apiClient(`/expenses/active`, { token, method: "GET" }),
+  createExpense: (data: FormData, token: string) =>
+    apiClient(`/expenses`, { token, method: "POST", body: data, isFormData: true }),
+  updateExpense: (expenseId: string, data: FormData, token: string) =>
+    apiClient(`/expenses/${expenseId}`, { token, method: "PUT", body: data, isFormData: true }),
+  markAsPaid: (expenseId: string, paid_date: string, payment_method: string, token: string) =>
+    apiClient(`/expenses/${expenseId}/paid`, { token, method: "PATCH", body: { paid_date, payment_method } }),
+  toggleActive: (expenseId: string, token: string) =>
+    apiClient(`/expenses/${expenseId}/toggle-active`, { token, method: "PATCH" }),
+  deleteExpense: (expenseId: string, token: string) =>
+    apiClient(`/expenses/${expenseId}`, { token, method: "DELETE" }),
+  getStatistics: (filters: any, token: string) => {
+    const params = new URLSearchParams()
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) {
+        params.append(key, filters[key])
+      }
+    })
+    return apiClient(`/expenses/statistics?${params.toString()}`, { token, method: "GET" })
+  },
+  getAnalytics: (filters: any, token: string) => {
+    const params = new URLSearchParams()
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) {
+        params.append(key, filters[key])
+      }
+    })
+    return apiClient(`/expenses/analytics/summary?${params.toString()}`, { token, method: "GET" })
+  },
 }
 
 export const employeeApi = {

@@ -221,7 +221,7 @@ export default function InvestorDashboard() {
                       <p className="text-sm text-muted-foreground">{investment.business_id?.category}</p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium text-foreground">${investment.amount.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-foreground">{investment.amount.toLocaleString()} Frw</span>
                       <Badge className={getStatusColor(investment.status)}>{investment.status}</Badge>
                     </div>
                   </div>

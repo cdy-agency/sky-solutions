@@ -430,7 +430,7 @@ export default function AdminBusinessesPage() {
                         </p>
                         {business.remaining_shares && business.share_value && (
                           <p className="text-xs text-muted-foreground">
-                            ${(business.remaining_shares * business.share_value).toLocaleString()} needed
+                            {(business.remaining_shares * business.share_value).toLocaleString()} Frw needed
                           </p>
                         )}
                       </div>
@@ -609,13 +609,13 @@ export default function AdminBusinessesPage() {
                   <div className="bg-muted/50 p-4 rounded-lg border border-border">
                     <p className="text-sm font-medium text-foreground mb-1">Calculated Funding Needed:</p>
                     <p className="text-lg font-semibold text-[#1B4F91]">
-                      ${(
+                      {(
                         Number.parseFloat(approvalFormData.total_shares || "0") *
                         Number.parseFloat(approvalFormData.share_value || "0")
-                      ).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Frw
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {approvalFormData.total_shares} shares × ${approvalFormData.share_value} per share
+                      {approvalFormData.total_shares} shares × {approvalFormData.share_value} Frw per share
                     </p>
                   </div>
                 )}

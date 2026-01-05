@@ -40,10 +40,10 @@ export default function TrustStats() {
       value: isLoading
         ? "..."
         : stats.totalRaised >= 1000000
-          ? `$${(stats.totalRaised / 1000000).toFixed(1)}M`
+          ? `${(stats.totalRaised / 1000000).toFixed(1)}M Frw`
           : stats.totalRaised >= 1000
-            ? `$${(stats.totalRaised / 1000).toFixed(0)}K`
-            : `$${stats.totalRaised}`,
+            ? `${(stats.totalRaised / 1000).toFixed(0)}K Frw`
+            : `${stats.totalRaised} Frw`,
     },
     {
       label: "Total Investors",

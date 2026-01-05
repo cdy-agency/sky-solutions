@@ -7,7 +7,7 @@ import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
-import { Home, Briefcase, Users, TrendingUp, LogOut, Menu, X, Building2, FileText } from "lucide-react"
+import { Home, Briefcase, Users, TrendingUp, LogOut, Menu, X, Building2, FileText, FileCheck } from "lucide-react"
 import { useState, useEffect } from "react"
 
 interface NavItem {
@@ -28,6 +28,7 @@ const navItems: Record<string, NavItem[]> = {
     { href: "/admin/payroll", label: "Payroll", icon: <DollarSign className="h-4 w-4" /> },
     { href: "/admin/library", label: "Document Library", icon: <Briefcase className="h-4 w-4" /> },
     { href: "/admin/share-requests", label: "Share Requests", icon: <TrendingUp className="h-4 w-4" /> },
+    { href: "/admin/terms", label: "Terms & Policy", icon: <FileCheck className="h-4 w-4" /> },
     { href: "/profile", label: "My Profile", icon: <Users className="h-4 w-4" /> },
   ],
   entrepreneur: [
