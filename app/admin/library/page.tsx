@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useAuth } from "@/lib/auth-context"
 import { libraryApi } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, FolderPlus, Upload, Download, Trash2, File, Folder, Edit2, Move, MoreVertical } from "lucide-react"
+import { Loader2, FolderPlus, Upload, Download, Trash2, File, Folder, Edit2, Move, MoreVertical, Eye, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Folder {
@@ -26,6 +26,8 @@ interface Document {
   file_type: string
   file_size: number
   file_url: string
+  view_url?: string
+  can_view_in_app?: boolean
   uploaded_by_id: { name: string }
   created_at: string
 }
@@ -75,6 +77,11 @@ export default function AdminLibraryPage() {
   const [deleteFolderDialog, setDeleteFolderDialog] = useState(false)
   const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null)
   const [isDeletingFolder, setIsDeletingFolder] = useState(false)
+
+  // View document state
+  const [viewDialog, setViewDialog] = useState(false)
+  const [viewingDocument, setViewingDocument] = useState<{ url: string; name: string; type: string } | null>(null)
+  const [pdfLoadError, setPdfLoadError] = useState(false)
 
   const fetchFolders = async (parentId: string | null = null) => {
     if (!token) return
@@ -298,14 +305,76 @@ export default function AdminLibraryPage() {
     if (!token) return
     try {
       const data = await libraryApi.downloadDocument(documentId, token)
-      const link = document.createElement("a")
-      link.href = data.download_url
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      
+      // For PDFs and other files, use fetch to handle download properly
+      if (data.file_type === "application/pdf" || data.file_type.startsWith("image/")) {
+        try {
+          const response = await fetch(data.download_url, {
+            method: "GET",
+            headers: {
+              Accept: data.file_type,
+            },
+          })
+          
+          if (!response.ok) throw new Error("Failed to fetch file")
+          
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement("a")
+          link.href = url
+          link.download = data.file_name || fileName
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+        } catch (fetchError) {
+          // Fallback to direct link if fetch fails (CORS issues)
+          const link = document.createElement("a")
+          link.href = data.download_url
+          link.download = data.file_name || fileName
+          link.target = "_blank"
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+        }
+      } else {
+        // For other file types, use direct download
+        const link = document.createElement("a")
+        link.href = data.download_url
+        link.download = data.file_name || fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
+      
+      toast({ title: "Success", description: "File download started" })
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to download file", variant: "destructive" })
+    }
+  }
+
+  const handleViewDocument = async (documentId: string, fileName: string, fileUrl: string, fileType: string) => {
+    if (!token) return
+    setPdfLoadError(false) // Reset error state
+    try {
+      // Try to get the document with view URL if available
+      const document = await libraryApi.getDocument(documentId, token)
+      const viewUrl = (document as any).view_url || document.file_url || fileUrl
+      
+      setViewingDocument({
+        url: viewUrl,
+        name: fileName,
+        type: fileType,
+      })
+      setViewDialog(true)
+    } catch (error: any) {
+      // Fallback to direct URL if API call fails
+      setViewingDocument({
+        url: fileUrl,
+        name: fileName,
+        type: fileType,
+      })
+      setViewDialog(true)
     }
   }
 
@@ -481,6 +550,15 @@ export default function AdminLibraryPage() {
                               </div>
                             </div>
                             <div className="flex gap-2">
+                              {(doc.file_type.startsWith("image/") || doc.file_type === "application/pdf" || doc.file_type.startsWith("text/")) && (
+                                <button
+                                  onClick={() => handleViewDocument(doc._id, doc.file_name, doc.file_url, doc.file_type)}
+                                  className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted"
+                                  title="View"
+                                >
+                                  <Eye className="h-4 w-4 text-[#1B4F91]" />
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleDownload(doc._id, doc.file_name)}
                                 className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted"
@@ -682,6 +760,176 @@ export default function AdminLibraryPage() {
               Delete
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Document Dialog */}
+      <Dialog open={viewDialog} onOpenChange={(open) => {
+        setViewDialog(open)
+        if (!open) {
+          setPdfLoadError(false)
+          setViewingDocument(null)
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>{viewingDocument?.name}</DialogTitle>
+                <DialogDescription>Viewing document in-app</DialogDescription>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setViewDialog(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto p-4 bg-muted/50 rounded-lg">
+            {viewingDocument && (
+              <>
+                {viewingDocument.type.startsWith("image/") ? (
+                  <div className="flex items-center justify-center min-h-[400px]">
+                    <img
+                      src={viewingDocument.url}
+                      alt={viewingDocument.name}
+                      className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                    />
+                  </div>
+                ) : viewingDocument.type === "application/pdf" ? (
+                  <div className="w-full h-[70vh] flex flex-col gap-2">
+                    <div className="flex items-center justify-between p-2 bg-background rounded-t-lg border-b">
+                      <p className="text-sm text-muted-foreground">PDF Viewer</p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            window.open(viewingDocument.url, "_blank", "noopener,noreferrer")
+                          }}
+                        >
+                          Open in New Tab
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const doc = documents.find((d) => d.file_name === viewingDocument.name)
+                            if (doc) {
+                              handleDownload(doc._id, viewingDocument.name)
+                            }
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                      </div>
+                    </div>
+                    {pdfLoadError ? (
+                      <div className="flex-1 border rounded-b-lg bg-muted/30 flex flex-col items-center justify-center p-8 text-center">
+                        <File className="h-16 w-16 text-muted-foreground mb-4" />
+                        <p className="text-foreground font-medium mb-2">Unable to display PDF in viewer</p>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          This may be due to CORS restrictions. Please use one of the options below:
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              window.open(viewingDocument.url, "_blank", "noopener,noreferrer")
+                            }}
+                          >
+                            Open in New Tab
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              const doc = documents.find((d) => d.file_name === viewingDocument.name)
+                              if (doc) {
+                                handleDownload(doc._id, viewingDocument.name)
+                              }
+                            }}
+                            className="bg-[#1B4F91]"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download PDF
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1 border rounded-b-lg overflow-hidden bg-muted/30">
+                        <iframe
+                          src={`${viewingDocument.url}#toolbar=1&navpanes=1&scrollbar=1`}
+                          className="w-full h-full"
+                          title={viewingDocument.name}
+                          onLoad={() => {
+                            // Check if iframe loaded successfully
+                            setTimeout(() => {
+                              const iframe = document.querySelector('iframe[title="' + viewingDocument.name + '"]') as HTMLIFrameElement
+                              if (iframe && !iframe.contentDocument && !iframe.contentWindow) {
+                                setPdfLoadError(true)
+                              }
+                            }, 2000)
+                          }}
+                          onError={() => {
+                            setPdfLoadError(true)
+                            toast({
+                              title: "PDF View Error",
+                              description: "Unable to display PDF in viewer. Use the buttons above to view or download.",
+                              variant: "destructive",
+                            })
+                          }}
+                        />
+                      </div>
+                    )}
+                    {!pdfLoadError && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        If the PDF doesn't load properly, click "Open in New Tab" or "Download" above
+                      </p>
+                    )}
+                  </div>
+                ) : viewingDocument.type.startsWith("text/") ? (
+                  <div className="bg-background p-4 rounded-lg border max-h-[70vh] overflow-auto">
+                    <iframe
+                      src={viewingDocument.url}
+                      className="w-full h-[70vh] border rounded"
+                      title={viewingDocument.name}
+                      sandbox="allow-same-origin"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+                    <File className="h-16 w-16 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Preview not available for this file type</p>
+                    <Button
+                      variant="outline"
+                      className="mt-4"
+                      onClick={() => viewingDocument && handleDownload(documents.find(d => d.file_name === viewingDocument.name)?._id || "", viewingDocument.name)}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download to view
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDialog(false)}>
+              Close
+            </Button>
+            {viewingDocument && (
+              <Button
+                onClick={() => {
+                  const doc = documents.find((d) => d.file_name === viewingDocument.name)
+                  if (doc) {
+                    handleDownload(doc._id, viewingDocument.name)
+                  }
+                }}
+                className="bg-[#1B4F91]"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

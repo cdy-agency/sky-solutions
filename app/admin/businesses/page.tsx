@@ -70,6 +70,7 @@ export default function AdminBusinessesPage() {
   const [rejectReason, setRejectReason] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [approvalFormData, setApprovalFormData] = useState({
+    category: "",
     description: "",
     total_shares: "",
     share_value: "",
@@ -138,10 +139,10 @@ export default function AdminBusinessesPage() {
     if (!token || !approvalDialog.business) return
 
     // Validate required fields
-    if (!approvalFormData.description || !approvalFormData.total_shares || !approvalFormData.share_value) {
+    if (!approvalFormData.category || !approvalFormData.description || !approvalFormData.total_shares || !approvalFormData.share_value) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields (description, total shares, share value)",
+        description: "Please fill in all required fields (category, description, total shares, share value)",
         variant: "destructive",
       })
       return
@@ -150,6 +151,7 @@ export default function AdminBusinessesPage() {
     setIsSubmitting(true)
     try {
       const formData = new FormData()
+      formData.append("category_id", approvalFormData.category)
       formData.append("description", approvalFormData.description)
       formData.append("total_shares", approvalFormData.total_shares)
       formData.append("share_value", approvalFormData.share_value)
@@ -171,6 +173,7 @@ export default function AdminBusinessesPage() {
       toast({ title: "Success", description: "Business approved successfully" })
       setApprovalDialog({ open: false, business: null, action: null })
       setApprovalFormData({
+        category: "",
         description: "",
         total_shares: "",
         share_value: "",
@@ -450,6 +453,7 @@ export default function AdminBusinessesPage() {
           if (!open) {
             setApprovalDialog({ open: false, business: null, action: null })
             setApprovalFormData({
+              category: "",
               description: "",
               total_shares: "",
               share_value: "",
@@ -535,6 +539,25 @@ export default function AdminBusinessesPage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="approval-category">Category *</Label>
+                  <Select
+                    value={approvalFormData.category}
+                    onValueChange={(value) => setApprovalFormData({ ...approvalFormData, category: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.length > 0 && categories.map((cat) => (
+                        <SelectItem key={cat._id} value={cat._id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="approval-description">Description *</Label>
                   <textarea
                     id="approval-description"
@@ -562,7 +585,7 @@ export default function AdminBusinessesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="approval-share-value">Share Value (USD) *</Label>
+                    <Label htmlFor="approval-share-value">Share Value (Frw) *</Label>
                     <Input
                       id="approval-share-value"
                       type="number"
@@ -819,7 +842,7 @@ export default function AdminBusinessesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pub-share-value">Share Value (USD) *</Label>
+                <Label htmlFor="pub-share-value">Share Value (Frw) *</Label>
                 <Input
                   id="pub-share-value"
                   type="number"
@@ -835,10 +858,10 @@ export default function AdminBusinessesPage() {
               <div className="bg-muted/50 p-3 rounded-lg">
                 <p className="text-sm text-muted-foreground">Total Funding Needed:</p>
                 <p className="text-lg font-semibold text-[#1B4F91]">
-                  ${(
+                  {(
                     Number.parseFloat(publicFormData.total_shares || "0") *
                     Number.parseFloat(publicFormData.share_value || "0")
-                  ).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  ).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Frw
                 </p>
               </div>
             )}

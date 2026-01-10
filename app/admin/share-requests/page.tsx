@@ -154,9 +154,9 @@ export default function AdminShareRequestsPage() {
                       <div className="bg-muted p-3 rounded-lg">
                         <p className="text-muted-foreground mb-1">Request Details</p>
                         <p className="font-semibold text-foreground">
-                          {request.requested_shares} shares @ ${request.share_value}/share
+                          {request.requested_shares} shares @ {request.share_value} Frw/share
                         </p>
-                        <p className="text-xs text-muted-foreground">Total: ${request.total_amount.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">Total: {request.total_amount.toLocaleString()} Frw</p>
                       </div>
                     </div>
 
