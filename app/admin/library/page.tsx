@@ -10,8 +10,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAuth } from "@/lib/auth-context"
 import { libraryApi } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, FolderPlus, Upload, Download, Trash2, File, Folder, Edit2, Move, MoreVertical, Eye, X } from "lucide-react"
+import { Loader2, FolderPlus, Upload, Download, Trash2, File, Folder, Edit2, Move, MoreVertical, Eye, X, ChevronRight, Home, Search, Grid3x3, List } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 
 interface Folder {
   _id: string
@@ -43,6 +45,7 @@ export default function AdminLibraryPage() {
   const [isLoadingDocs, setIsLoadingDocs] = useState(false)
   const [currentParentId, setCurrentParentId] = useState<string | null>(null)
   const [folderPath, setFolderPath] = useState<Folder[]>([])
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list")
 
   // Create folder state
   const [createFolderDialog, setCreateFolderDialog] = useState(false)
@@ -306,7 +309,6 @@ export default function AdminLibraryPage() {
     try {
       const data = await libraryApi.downloadDocument(documentId, token)
       
-      // For PDFs and other files, use fetch to handle download properly
       if (data.file_type === "application/pdf" || data.file_type.startsWith("image/")) {
         try {
           const response = await fetch(data.download_url, {
@@ -328,7 +330,6 @@ export default function AdminLibraryPage() {
           document.body.removeChild(link)
           window.URL.revokeObjectURL(url)
         } catch (fetchError) {
-          // Fallback to direct link if fetch fails (CORS issues)
           const link = document.createElement("a")
           link.href = data.download_url
           link.download = data.file_name || fileName
@@ -338,7 +339,6 @@ export default function AdminLibraryPage() {
           document.body.removeChild(link)
         }
       } else {
-        // For other file types, use direct download
         const link = document.createElement("a")
         link.href = data.download_url
         link.download = data.file_name || fileName
@@ -355,9 +355,8 @@ export default function AdminLibraryPage() {
 
   const handleViewDocument = async (documentId: string, fileName: string, fileUrl: string, fileType: string) => {
     if (!token) return
-    setPdfLoadError(false) // Reset error state
+    setPdfLoadError(false)
     try {
-      // Try to get the document with view URL if available
       const document = await libraryApi.getDocument(documentId, token)
       const viewUrl = (document as any).view_url || document.file_url || fileUrl
       
@@ -368,7 +367,6 @@ export default function AdminLibraryPage() {
       })
       setViewDialog(true)
     } catch (error: any) {
-      // Fallback to direct URL if API call fails
       setViewingDocument({
         url: fileUrl,
         name: fileName,
@@ -386,87 +384,185 @@ export default function AdminLibraryPage() {
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i]
   }
 
+  const getFileIcon = (fileType: string) => {
+    if (fileType.startsWith("image/")) return "🖼️"
+    if (fileType === "application/pdf") return "📄"
+    if (fileType.includes("word") || fileType.includes("document")) return "📝"
+    if (fileType.includes("sheet") || fileType.includes("excel")) return "📊"
+    if (fileType.includes("presentation") || fileType.includes("powerpoint")) return "📊"
+    if (fileType.startsWith("text/")) return "📃"
+    return "📎"
+  }
+
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Document Library</h1>
-            <p className="text-muted-foreground">Manage and organize business documents</p>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight bg-linear-to-r from-[#1B4F91] to-[#2563eb] bg-clip-text text-transparent">
+              Document Library
+            </h1>
+            <p className="text-muted-foreground">Organize and manage your business documents efficiently</p>
           </div>
-          <Button onClick={() => setCreateFolderDialog(true)} className="bg-[#1B4F91]">
+          <Button 
+            onClick={() => setCreateFolderDialog(true)} 
+            className="bg-linear-to-r from-[#1B4F91] to-[#2563eb] hover:from-[#1B4F91]/90 hover:to-[#2563eb]/90 shadow-lg"
+          >
             <FolderPlus className="h-4 w-4 mr-2" />
             New Folder
           </Button>
         </div>
 
+        {/* Breadcrumb Navigation */}
+        {folderPath.length > 0 && (
+          <Card className="border-l-4 border-l-[#1B4F91] shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-sm">
+                <button
+                  onClick={() => {
+                    setCurrentParentId(null)
+                    setFolderPath([])
+                    setSelectedFolder(null)
+                  }}
+                  className="flex items-center gap-1 text-muted-foreground hover:text-[#1B4F91] transition-colors"
+                >
+                  <Home className="h-4 w-4" />
+                  <span>Home</span>
+                </button>
+                {folderPath.map((folder, index) => (
+                  <React.Fragment key={folder._id}>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <button
+                      onClick={() => {
+                        const newPath = folderPath.slice(0, index + 1)
+                        setFolderPath(newPath)
+                        setCurrentParentId(folder._id)
+                        setSelectedFolder(null)
+                      }}
+                      className={`hover:text-[#1B4F91] transition-colors ${
+                        index === folderPath.length - 1 ? "text-[#1B4F91] font-medium" : "text-muted-foreground"
+                      }`}
+                    >
+                      {folder.name}
+                    </button>
+                  </React.Fragment>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Folders sidebar */}
+          {/* Folders Sidebar */}
           <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Folders</CardTitle>
+            <Card className="shadow-md border-t-4 border-t-[#1B4F91]">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Folder className="h-5 w-5 text-[#1B4F91]" />
+                  Folders
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <Separator />
+              <CardContent className="pt-4 space-y-1">
                 {isLoadingFolders ? (
                   <div className="space-y-2">
                     {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="h-10 bg-muted rounded animate-pulse" />
+                      <div key={i} className="h-10 bg-linear-to-r from-muted to-muted/50 rounded-md animate-pulse" />
                     ))}
                   </div>
                 ) : folders.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No folders yet</p>
+                  <div className="text-center py-8">
+                    <Folder className="h-12 w-12 mx-auto text-muted-foreground/30 mb-2" />
+                    <p className="text-sm text-muted-foreground">No folders yet</p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCreateFolderDialog(true)}
+                      className="mt-2 text-[#1B4F91]"
+                    >
+                      Create your first folder
+                    </Button>
+                  </div>
                 ) : (
                   <>
                     {folderPath.length > 0 && (
                       <button
                         onClick={handleNavigateUp}
-                        className="w-full text-left px-3 py-2 rounded-md text-sm transition-colors hover:bg-muted text-foreground flex items-center gap-2"
+                        className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all hover:bg-linear-to-r hover:from-muted hover:to-muted/50 text-foreground flex items-center gap-2 border border-transparent hover:border-border"
                       >
-                        <Folder className="h-4 w-4" />
-                        .. (Up)
+                        <div className="w-8 h-8 rounded-md bg-muted flex items-center justify-center">
+                          <Folder className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium">.. (Back)</span>
                       </button>
                     )}
                     {folders.map((folder) => (
                       <div
                         key={folder._id}
-                        className={`group flex items-center gap-2 rounded-md text-sm transition-colors ${
+                        className={`group rounded-lg transition-all ${
                           selectedFolder?._id === folder._id
-                            ? "bg-[#1B4F91] text-white"
-                            : "hover:bg-muted text-foreground"
+                            ? "bg-linear-to-r from-[#1B4F91] to-[#2563eb] text-white shadow-md"
+                            : "hover:bg-linear-to-r hover:from-muted hover:to-muted/50 text-foreground border border-transparent hover:border-border"
                         }`}
                       >
-                        <button
-                          onClick={() => handleFolderClick(folder)}
-                          onDoubleClick={() => handleEnterFolder(folder)}
-                          className="flex-1 text-left px-3 py-2 flex items-center gap-2"
-                        >
-                          <Folder className="h-4 w-4" />
-                          {folder.name}
-                        </button>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                        <div className="flex items-center gap-2">
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleRename("folder", folder._id, folder.name)
-                            }}
-                            className="p-1 hover:bg-black/10 rounded"
-                            title="Rename"
+                            onClick={() => handleFolderClick(folder)}
+                            onDoubleClick={() => handleEnterFolder(folder)}
+                            className="flex-1 text-left px-3 py-2.5 flex items-center gap-2"
                           >
-                            <Edit2 className="h-3 w-3" />
+                            <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
+                              selectedFolder?._id === folder._id 
+                                ? "bg-white/20" 
+                                : "bg-muted"
+                            }`}>
+                              <Folder className={`h-4 w-4 ${
+                                selectedFolder?._id === folder._id 
+                                  ? "text-white" 
+                                  : "text-[#1B4F91]"
+                              }`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate text-sm">{folder.name}</p>
+                              {folder.description && (
+                                <p className={`text-xs truncate ${
+                                  selectedFolder?._id === folder._id 
+                                    ? "text-white/70" 
+                                    : "text-muted-foreground"
+                                }`}>
+                                  {folder.description}
+                                </p>
+                              )}
+                            </div>
                           </button>
-                          
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setFolderToDelete(folder)
-                              setDeleteFolderDialog(true)
-                            }}
-                            className="p-1 hover:bg-red-100 rounded"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-3 w-3 text-red-500" />
-                          </button>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRename("folder", folder._id, folder.name)
+                              }}
+                              className={`p-1.5 rounded-md transition-colors ${
+                                selectedFolder?._id === folder._id
+                                  ? "hover:bg-white/20"
+                                  : "hover:bg-muted"
+                              }`}
+                              title="Rename"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setFolderToDelete(folder)
+                                setDeleteFolderDialog(true)
+                              }}
+                              className="p-1.5 hover:bg-red-50 rounded-md transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -476,84 +572,141 @@ export default function AdminLibraryPage() {
             </Card>
           </div>
 
-          {/* Documents */}
+          {/* Documents Area */}
           <div className="lg:col-span-3 space-y-4">
-            {selectedFolder && (
+            {selectedFolder ? (
               <React.Fragment>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-foreground">{selectedFolder.name}</h2>
-                    {selectedFolder.description && (
-                      <p className="text-sm text-muted-foreground">{selectedFolder.description}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Sort by" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="name">Name</SelectItem>
-                        <SelectItem value="date">Date</SelectItem>
-                        <SelectItem value="size">Size</SelectItem>
-                        <SelectItem value="type">Type</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setCurrentParentId(selectedFolder._id)
-                        setFolderPath([...folderPath, selectedFolder])
-                        setCreateFolderDialog(true)
-                      }}
-                    >
-                      <FolderPlus className="h-4 w-4 mr-2" />
-                      Create Subfolder
-                    </Button>
-                    <Button
-                      onClick={() => setUploadDialog(true)}
-                      className="bg-[#D4A84B] text-black hover:bg-[#D4A84B]/90"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload File
-                    </Button>
-                  </div>
-                </div>
+                {/* Folder Header */}
+                <Card className="shadow-md border-l-4 border-l-[#D4A84B]">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-12 h-12 rounded-xl bg-linear-to-br from-[#D4A84B] to-[#B8922E] flex items-center justify-center shadow-lg">
+                            <Folder className="h-6 w-6 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h2 className="text-2xl font-bold text-foreground truncate">{selectedFolder.name}</h2>
+                            {selectedFolder.description && (
+                              <p className="text-sm text-muted-foreground mt-0.5">{selectedFolder.description}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-3">
+                          <Badge variant="secondary" className="text-xs">
+                            {documents.length} {documents.length === 1 ? 'document' : 'documents'}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Created {new Date(selectedFolder.created_at).toLocaleDateString()}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 items-start">
+                        <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                          <SelectTrigger className="w-35 border-border">
+                            <SelectValue placeholder="Sort by" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="name">Name</SelectItem>
+                            <SelectItem value="date">Date</SelectItem>
+                            <SelectItem value="size">Size</SelectItem>
+                            <SelectItem value="type">Type</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          size="default"
+                          onClick={() => {
+                            setCurrentParentId(selectedFolder._id)
+                            setFolderPath([...folderPath, selectedFolder])
+                            setCreateFolderDialog(true)
+                          }}
+                          className="border-[#1B4F91]/20 text-[#1B4F91] hover:bg-[#1B4F91]/5"
+                        >
+                          <FolderPlus className="h-4 w-4 mr-2" />
+                          Subfolder
+                        </Button>
+                        <Button
+                          onClick={() => setUploadDialog(true)}
+                          className="bg-linear-to-r from-[#D4A84B] to-[#B8922E] text-white hover:from-[#D4A84B]/90 hover:to-[#B8922E]/90 shadow-lg"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload File
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
+                {/* Documents List */}
                 {isLoadingDocs ? (
                   <div className="space-y-3">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="h-16 bg-muted rounded animate-pulse" />
+                      <Card key={i} className="shadow-sm">
+                        <CardContent className="p-4">
+                          <div className="h-16 bg-linear-to-r from-muted to-muted/50 rounded animate-pulse" />
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
                 ) : documents.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-12 text-center">
-                      <File className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
-                      <p className="text-muted-foreground">No documents in this folder</p>
+                  <Card className="shadow-md">
+                    <CardContent className="p-16 text-center">
+                      <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-linear-to-br from-muted to-muted/50 flex items-center justify-center">
+                        <File className="h-10 w-10 text-muted-foreground/40" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
+                      <p className="text-muted-foreground mb-4">Upload your first document to get started</p>
+                      <Button
+                        onClick={() => setUploadDialog(true)}
+                        className="bg-linear-to-r from-[#1B4F91] to-[#2563eb] hover:from-[#1B4F91]/90 hover:to-[#2563eb]/90"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Document
+                      </Button>
                     </CardContent>
                   </Card>
                 ) : (
                   <div className="space-y-3">
                     {documents.map((doc) => (
-                      <Card key={doc._id}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 flex-1">
-                              <File className="h-6 w-6 text-muted-foreground" />
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-foreground truncate">{doc.file_name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {formatFileSize(doc.file_size)} • {doc.uploaded_by_id?.name} •{" "}
+                      <Card 
+                        key={doc._id} 
+                        className="group shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-transparent hover:border-l-[#1B4F91]"
+                      >
+                        <CardContent className="p-5">
+                          <div className="flex items-center gap-4">
+                            {/* File Icon */}
+                            <div className="w-12 h-12 rounded-xl bg-linear-to-br from-muted to-muted/50 flex items-center justify-center text-2xl shrink-0 shadow-sm">
+                              {getFileIcon(doc.file_type)}
+                            </div>
+                            
+                            {/* File Info */}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-foreground truncate text-base group-hover:text-[#1B4F91] transition-colors">
+                                {doc.file_name}
+                              </p>
+                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4A84B]"></span>
+                                  {formatFileSize(doc.file_size)}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F91]"></span>
+                                  {doc.uploaded_by_id?.name}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                                   {new Date(doc.created_at).toLocaleDateString()}
-                                </p>
+                                </span>
                               </div>
                             </div>
-                            <div className="flex gap-2">
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                               {(doc.file_type.startsWith("image/") || doc.file_type === "application/pdf" || doc.file_type.startsWith("text/")) && (
                                 <button
                                   onClick={() => handleViewDocument(doc._id, doc.file_name, doc.file_url, doc.file_type)}
-                                  className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted"
+                                  className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200"
                                   title="View"
                                 >
                                   <Eye className="h-4 w-4 text-[#1B4F91]" />
@@ -561,28 +714,21 @@ export default function AdminLibraryPage() {
                               )}
                               <button
                                 onClick={() => handleDownload(doc._id, doc.file_name)}
-                                className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted"
+                                className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-green-50 transition-colors border border-transparent hover:border-green-200"
                                 title="Download"
                               >
-                                <Download className="h-4 w-4 text-[#1B4F91]" />
+                                <Download className="h-4 w-4 text-green-600" />
                               </button>
                               <button
                                 onClick={() => handleRename("document", doc._id, doc.file_name)}
-                                className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted"
+                                className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-amber-50 transition-colors border border-transparent hover:border-amber-200"
                                 title="Rename"
                               >
-                                <Edit2 className="h-4 w-4 text-[#1B4F91]" />
+                                <Edit2 className="h-4 w-4 text-amber-600" />
                               </button>
-                                {/* <button
-                                  onClick={() => handleMove("document", doc._id)}
-                                  className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-muted"
-                                  title="Move"
-                                >
-                                  <Move className="h-4 w-4 text-[#1B4F91]" />
-                                </button> */}
                               <button
                                 onClick={() => handleDeleteDocument(doc._id)}
-                                className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-red-100"
+                                className="inline-flex items-center justify-center h-9 w-9 rounded-lg hover:bg-red-50 transition-colors border border-transparent hover:border-red-200"
                                 title="Delete"
                               >
                                 <Trash2 className="h-4 w-4 text-red-500" />
@@ -595,6 +741,16 @@ export default function AdminLibraryPage() {
                   </div>
                 )}
               </React.Fragment>
+            ) : (
+              <Card className="shadow-md">
+                <CardContent className="p-16 text-center">
+                  <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-linear-to-br from-[#1B4F91]/10 to-[#2563eb]/10 flex items-center justify-center">
+                    <Folder className="h-12 w-12 text-[#1B4F91]" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">Select a folder to view documents</h3>
+                  <p className="text-muted-foreground">Choose a folder from the sidebar to see its contents</p>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
@@ -602,84 +758,118 @@ export default function AdminLibraryPage() {
 
       {/* Create Folder Dialog */}
       <Dialog open={createFolderDialog} onOpenChange={setCreateFolderDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
-            <DialogTitle>Create New Folder</DialogTitle>
-            <DialogDescription>Add a new folder to organize documents</DialogDescription>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#1B4F91] to-[#2563eb] flex items-center justify-center">
+                <FolderPlus className="h-5 w-5 text-white" />
+              </div>
+              Create New Folder
+            </DialogTitle>
+            <DialogDescription>Add a new folder to organize your documents</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-4">
             <div className="space-y-2">
-              <Label htmlFor="folder-name">Folder Name *</Label>
+              <Label htmlFor="folder-name" className="text-sm font-medium">Folder Name *</Label>
               <Input
                 id="folder-name"
                 placeholder="e.g., Investor Documents"
                 value={folderName}
                 onChange={(e) => setFolderName(e.target.value)}
+                className="h-11"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="folder-desc">Description</Label>
+              <Label htmlFor="folder-desc" className="text-sm font-medium">Description</Label>
               <Input
                 id="folder-desc"
                 placeholder="Optional description"
                 value={folderDescription}
                 onChange={(e) => setFolderDescription(e.target.value)}
+                className="h-11"
               />
             </div>
           </div>
-          <div className="flex gap-2">
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setCreateFolderDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreateFolder} disabled={!folderName || isCreatingFolder} className="bg-[#1B4F91]">
+            <Button 
+              onClick={handleCreateFolder} 
+              disabled={!folderName || isCreatingFolder} 
+              className="bg-linear-to-r from-[#1B4F91] to-[#2563eb] hover:from-[#1B4F91]/90 hover:to-[#2563eb]/90"
+            >
               {isCreatingFolder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Create
+              Create Folder
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Upload File Dialog */}
       <Dialog open={uploadDialog} onOpenChange={setUploadDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
-            <DialogTitle>Upload Document</DialogTitle>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#D4A84B] to-[#B8922E] flex items-center justify-center">
+                <Upload className="h-5 w-5 text-white" />
+              </div>
+              Upload Document
+            </DialogTitle>
             <DialogDescription>Upload a file to {selectedFolder?.name}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-4">
             <div className="space-y-2">
-              <Label htmlFor="file-upload">Select File *</Label>
-              <input
-                id="file-upload"
-                type="file"
-                onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                className="w-full px-3 py-2 border border-border rounded-md"
-              />
-              {uploadFile && <p className="text-sm text-muted-foreground">{uploadFile.name}</p>}
+              <Label htmlFor="file-upload" className="text-sm font-medium">Select File *</Label>
+              <div className="relative">
+                <input
+                  id="file-upload"
+                  type="file"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                  className="w-full px-4 py-3 border border-border rounded-lg cursor-pointer hover:border-[#1B4F91] transition-colors file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#1B4F91] file:text-white hover:file:bg-[#1B4F91]/90"
+                />
+              </div>
+              {uploadFile && (
+                <div className="mt-3 p-3 bg-muted/50 rounded-lg border border-border">
+                  <p className="text-sm font-medium text-foreground">{uploadFile.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatFileSize(uploadFile.size)}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setUploadDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUploadFile} disabled={!uploadFile || isUploading} className="bg-[#1B4F91]">
+            <Button 
+              onClick={handleUploadFile} 
+              disabled={!uploadFile || isUploading} 
+              className="bg-linear-to-r from-[#D4A84B] to-[#B8922E] hover:from-[#D4A84B]/90 hover:to-[#B8922E]/90"
+            >
               {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Upload
+              Upload File
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Rename Dialog */}
       <Dialog open={renameDialog} onOpenChange={setRenameDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
-            <DialogTitle>Rename {renameType === "folder" ? "Folder" : "Document"}</DialogTitle>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-linear-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                <Edit2 className="h-5 w-5 text-white" />
+              </div>
+              Rename {renameType === "folder" ? "Folder" : "Document"}
+            </DialogTitle>
             <DialogDescription>Enter a new name for this {renameType}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-4">
             <div className="space-y-2">
-              <Label htmlFor="rename-input">Name *</Label>
+              <Label htmlFor="rename-input" className="text-sm font-medium">Name *</Label>
               <Input
                 id="rename-input"
                 value={renameValue}
@@ -687,33 +877,43 @@ export default function AdminLibraryPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleRenameSubmit()
                 }}
+                className="h-11"
               />
             </div>
           </div>
-          <div className="flex gap-2">
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setRenameDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleRenameSubmit} disabled={!renameValue || isRenaming} className="bg-[#1B4F91]">
+            <Button 
+              onClick={handleRenameSubmit} 
+              disabled={!renameValue || isRenaming} 
+              className="bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+            >
               {isRenaming && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Rename
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Move Dialog */}
       <Dialog open={moveDialog} onOpenChange={setMoveDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
-            <DialogTitle>Move {moveType === "folder" ? "Folder" : "Document"}</DialogTitle>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <Move className="h-5 w-5 text-white" />
+              </div>
+              Move {moveType === "folder" ? "Folder" : "Document"}
+            </DialogTitle>
             <DialogDescription>Select the destination folder</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-4">
             <div className="space-y-2">
-              <Label htmlFor="move-target">Target Folder</Label>
+              <Label htmlFor="move-target" className="text-sm font-medium">Target Folder</Label>
               <Select value={moveTargetFolder || ""} onValueChange={setMoveTargetFolder}>
-                <SelectTrigger id="move-target">
+                <SelectTrigger id="move-target" className="h-11">
                   <SelectValue placeholder="Select folder (or leave empty for root)" />
                 </SelectTrigger>
                 <SelectContent>
@@ -729,37 +929,51 @@ export default function AdminLibraryPage() {
               </Select>
             </div>
           </div>
-          <div className="flex gap-2">
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setMoveDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleMoveSubmit} disabled={isMoving} className="bg-[#1B4F91]">
+            <Button 
+              onClick={handleMoveSubmit} 
+              disabled={isMoving} 
+              className="bg-linear-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            >
               {isMoving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Move
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Folder Dialog */}
       <Dialog open={deleteFolderDialog} onOpenChange={setDeleteFolderDialog}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-125">
           <DialogHeader>
-            <DialogTitle>Delete Folder</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{folderToDelete?.name}"? This action cannot be undone. The folder must be
-              empty (no subfolders or documents).
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-linear-to-br from-red-500 to-red-600 flex items-center justify-center">
+                <Trash2 className="h-5 w-5 text-white" />
+              </div>
+              Delete Folder
+            </DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              Are you sure you want to delete <span className="font-semibold text-foreground">"{folderToDelete?.name}"</span>? 
+              This action cannot be undone. The folder must be empty (no subfolders or documents).
             </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-2">
+          <DialogFooter className="gap-2 pt-4">
             <Button variant="outline" onClick={() => setDeleteFolderDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleDeleteFolder} disabled={isDeletingFolder} variant="destructive">
+            <Button 
+              onClick={handleDeleteFolder} 
+              disabled={isDeletingFolder} 
+              variant="destructive"
+              className="bg-linear-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+            >
               {isDeletingFolder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Delete
+              Delete Folder
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -771,33 +985,38 @@ export default function AdminLibraryPage() {
           setViewingDocument(null)
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle>{viewingDocument?.name}</DialogTitle>
-                <DialogDescription>Viewing document in-app</DialogDescription>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-linear-to-br from-[#1B4F91] to-[#2563eb] flex items-center justify-center">
+                  <Eye className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg">{viewingDocument?.name}</DialogTitle>
+                  <DialogDescription>Document viewer</DialogDescription>
+                </div>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setViewDialog(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
           </DialogHeader>
-          <div className="flex-1 overflow-auto p-4 bg-muted/50 rounded-lg">
+          <div className="flex-1 overflow-auto p-4 bg-muted/30 rounded-xl border">
             {viewingDocument && (
               <>
                 {viewingDocument.type.startsWith("image/") ? (
-                  <div className="flex items-center justify-center min-h-[400px]">
+                  <div className="flex items-center justify-center min-h-125">
                     <img
                       src={viewingDocument.url}
                       alt={viewingDocument.name}
-                      className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                      className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-xl"
                     />
                   </div>
                 ) : viewingDocument.type === "application/pdf" ? (
                   <div className="w-full h-[70vh] flex flex-col gap-2">
-                    <div className="flex items-center justify-between p-2 bg-background rounded-t-lg border-b">
-                      <p className="text-sm text-muted-foreground">PDF Viewer</p>
+                    <div className="flex items-center justify-between p-3 bg-background rounded-lg border shadow-sm">
+                      <p className="text-sm font-medium text-muted-foreground">PDF Viewer</p>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -824,13 +1043,15 @@ export default function AdminLibraryPage() {
                       </div>
                     </div>
                     {pdfLoadError ? (
-                      <div className="flex-1 border rounded-b-lg bg-muted/30 flex flex-col items-center justify-center p-8 text-center">
-                        <File className="h-16 w-16 text-muted-foreground mb-4" />
-                        <p className="text-foreground font-medium mb-2">Unable to display PDF in viewer</p>
-                        <p className="text-sm text-muted-foreground mb-4">
+                      <div className="flex-1 border rounded-lg bg-background flex flex-col items-center justify-center p-8 text-center shadow-sm">
+                        <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                          <File className="h-8 w-8 text-red-500" />
+                        </div>
+                        <p className="text-foreground font-semibold text-lg mb-2">Unable to display PDF</p>
+                        <p className="text-sm text-muted-foreground mb-6 max-w-md">
                           This may be due to CORS restrictions. Please use one of the options below:
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           <Button
                             variant="outline"
                             onClick={() => {
@@ -846,7 +1067,7 @@ export default function AdminLibraryPage() {
                                 handleDownload(doc._id, viewingDocument.name)
                               }
                             }}
-                            className="bg-[#1B4F91]"
+                            className="bg-linear-to-r from-[#1B4F91] to-[#2563eb]"
                           >
                             <Download className="h-4 w-4 mr-2" />
                             Download PDF
@@ -854,13 +1075,12 @@ export default function AdminLibraryPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="flex-1 border rounded-b-lg overflow-hidden bg-muted/30">
+                      <div className="flex-1 border rounded-lg overflow-hidden bg-white shadow-sm">
                         <iframe
                           src={`${viewingDocument.url}#toolbar=1&navpanes=1&scrollbar=1`}
                           className="w-full h-full"
                           title={viewingDocument.name}
                           onLoad={() => {
-                            // Check if iframe loaded successfully
                             setTimeout(() => {
                               const iframe = document.querySelector('iframe[title="' + viewingDocument.name + '"]') as HTMLIFrameElement
                               if (iframe && !iframe.contentDocument && !iframe.contentWindow) {
@@ -886,7 +1106,7 @@ export default function AdminLibraryPage() {
                     )}
                   </div>
                 ) : viewingDocument.type.startsWith("text/") ? (
-                  <div className="bg-background p-4 rounded-lg border max-h-[70vh] overflow-auto">
+                  <div className="bg-background p-4 rounded-lg border shadow-sm max-h-[70vh] overflow-auto">
                     <iframe
                       src={viewingDocument.url}
                       className="w-full h-[70vh] border rounded"
@@ -895,12 +1115,14 @@ export default function AdminLibraryPage() {
                     />
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-                    <File className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">Preview not available for this file type</p>
+                  <div className="flex flex-col items-center justify-center min-h-125 text-center">
+                    <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
+                      <File className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <p className="text-lg font-medium mb-2">Preview not available</p>
+                    <p className="text-muted-foreground mb-4">This file type cannot be previewed in the browser</p>
                     <Button
                       variant="outline"
-                      className="mt-4"
                       onClick={() => viewingDocument && handleDownload(documents.find(d => d.file_name === viewingDocument.name)?._id || "", viewingDocument.name)}
                     >
                       <Download className="h-4 w-4 mr-2" />
@@ -911,7 +1133,7 @@ export default function AdminLibraryPage() {
               </>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setViewDialog(false)}>
               Close
             </Button>
@@ -923,7 +1145,7 @@ export default function AdminLibraryPage() {
                     handleDownload(doc._id, viewingDocument.name)
                   }
                 }}
-                className="bg-[#1B4F91]"
+                className="bg-linear-to-r from-[#1B4F91] to-[#2563eb] hover:from-[#1B4F91]/90 hover:to-[#2563eb]/90"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Download

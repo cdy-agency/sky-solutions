@@ -1,12 +1,18 @@
-"use client"
-import { useEffect, useState } from "react"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+"use client";
+import { useEffect, useState } from "react";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -14,53 +20,71 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { useAuth } from "@/lib/auth-context"
-import { expenseApi } from "@/lib/api"
-import { useToast } from "@/hooks/use-toast"
-import { Plus, Edit, Trash2, CheckCircle, XCircle, Pause, Play, Loader2, TrendingUp, DollarSign } from "lucide-react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/auth-context";
+import { expenseApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Pause,
+  Play,
+  Loader2,
+  TrendingUp,
+  DollarSign,
+} from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Expense {
-  _id: string
-  name: string
-  category: string
-  amount: number
-  type: "one_time" | "recursive"
-  priority: "high" | "medium" | "low"
-  due_date: string
-  paid_date?: string
-  description?: string
-  payment_method?: string
-  status: "active" | "paid" | "pending" | "overdue" | "stopped"
-  frequency?: "days" | "month" | "quarter" | "half" | "year"
-  frequency_value?: number
-  is_active?: boolean
-  parent_id?: { name: string }
-  created_by: { name: string; email: string }
+  _id: string;
+  name: string;
+  category: string;
+  amount: number;
+  type: "one_time" | "recursive";
+  priority: "high" | "medium" | "low";
+  due_date: string;
+  paid_date?: string;
+  description?: string;
+  payment_method?: string;
+  status: "active" | "paid" | "pending" | "overdue" | "stopped";
+  frequency?: "days" | "month" | "quarter" | "half" | "year";
+  frequency_value?: number;
+  is_active?: boolean;
+  parent_id?: { name: string };
+  created_by: { name: string; email: string };
 }
 
 interface ExpenseStats {
-  totalExpenses: number
-  paidExpenses: number
-  pendingExpenses: number
-  overdueExpenses: number
-  categoryBreakdown: Record<string, number>
-  priorityBreakdown: Record<string, number>
-  typeBreakdown: Record<string, number>
-  expenseCount: number
+  totalExpenses: number;
+  paidExpenses: number;
+  pendingExpenses: number;
+  overdueExpenses: number;
+  categoryBreakdown: Record<string, number>;
+  priorityBreakdown: Record<string, number>;
+  typeBreakdown: Record<string, number>;
+  expenseCount: number;
 }
 
 export default function ExpensesPage() {
-  const { token } = useAuth()
-  const { toast } = useToast()
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [stats, setStats] = useState<ExpenseStats | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [limit] = useState(10)
-  const [totalPages, setTotalPages] = useState(1)
+  const { token } = useAuth();
+  const { toast } = useToast();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [stats, setStats] = useState<ExpenseStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
   const [filters, setFilters] = useState({
     category: "all",
     status: "all",
@@ -68,13 +92,13 @@ export default function ExpensesPage() {
     priority: "all",
     startDate: "",
     endDate: "",
-  })
-  const [showForm, setShowForm] = useState(false)
-  const [showPaidDialog, setShowPaidDialog] = useState(false)
-  const [expenseToPay, setExpenseToPay] = useState<Expense | null>(null)
-  const [paymentMethod, setPaymentMethod] = useState("")
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  });
+  const [showForm, setShowForm] = useState(false);
+  const [showPaidDialog, setShowPaidDialog] = useState(false);
+  const [expenseToPay, setExpenseToPay] = useState<Expense | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     category: "",
@@ -86,93 +110,135 @@ export default function ExpensesPage() {
     payment_method: "",
     frequency: "month" as "days" | "month" | "quarter" | "half" | "year",
     frequency_value: "",
-  })
+  });
 
   const fetchExpenses = async () => {
-    if (!token) return
+    if (!token) return;
     try {
-      setIsLoading(true)
-      const data = await expenseApi.getExpenses({ ...filters, page: String(page), limit: String(limit) }, token)
-      setExpenses(data.expenses)
-      setTotalPages(data.pagination.pages)
+      setIsLoading(true);
+      const data = await expenseApi.getExpenses(
+        { ...filters, page: String(page), limit: String(limit) },
+        token,
+      );
+      setExpenses(data.expenses);
+      setTotalPages(data.pagination.pages);
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to fetch expenses", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch expenses",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const fetchStats = async () => {
-    if (!token) return
+    if (!token) return;
     try {
-      const data = await expenseApi.getStatistics({ startDate: filters.startDate, endDate: filters.endDate }, token)
-      setStats(data)
+      const data = await expenseApi.getStatistics(
+        { startDate: filters.startDate, endDate: filters.endDate },
+        token,
+      );
+      setStats(data);
     } catch (error: any) {
-      console.error("Failed to fetch stats:", error)
+      console.error("Failed to fetch stats:", error);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchExpenses()
-    fetchStats()
-  }, [page, filters, token])
+    fetchExpenses();
+    fetchStats();
+  }, [page, filters, token]);
 
   const handleSubmit = async () => {
-    if (!token) return
-    if (!formData.name || !formData.category || !formData.amount || !formData.due_date) {
-      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" })
-      return
+    if (!token) return;
+    if (
+      !formData.name ||
+      !formData.category ||
+      !formData.amount ||
+      !formData.due_date
+    ) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
     }
 
     if (formData.type === "recursive" && !formData.frequency) {
-      toast({ title: "Error", description: "Frequency is required for recursive expenses", variant: "destructive" })
-      return
+      toast({
+        title: "Error",
+        description: "Frequency is required for recursive expenses",
+        variant: "destructive",
+      });
+      return;
     }
 
     if (formData.frequency === "days" && !formData.frequency_value) {
-      toast({ title: "Error", description: "Frequency value is required for days frequency", variant: "destructive" })
-      return
+      toast({
+        title: "Error",
+        description: "Frequency value is required for days frequency",
+        variant: "destructive",
+      });
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      const submitFormData = new FormData()
-      submitFormData.append("name", formData.name)
-      submitFormData.append("category", formData.category)
-      submitFormData.append("amount", formData.amount)
-      submitFormData.append("type", formData.type)
-      submitFormData.append("priority", formData.priority)
-      submitFormData.append("due_date", formData.due_date)
-      if (formData.description) submitFormData.append("description", formData.description)
+      const submitFormData = new FormData();
+      submitFormData.append("name", formData.name);
+      submitFormData.append("category", formData.category);
+      submitFormData.append("amount", formData.amount);
+      submitFormData.append("type", formData.type);
+      submitFormData.append("priority", formData.priority);
+      submitFormData.append("due_date", formData.due_date);
+      if (formData.description)
+        submitFormData.append("description", formData.description);
       if (formData.type === "recursive") {
-        submitFormData.append("frequency", formData.frequency)
+        submitFormData.append("frequency", formData.frequency);
         if (formData.frequency === "days") {
-          submitFormData.append("frequency_value", formData.frequency_value)
+          submitFormData.append("frequency_value", formData.frequency_value);
         }
       }
 
       if (editingExpense) {
-        await expenseApi.updateExpense(editingExpense._id, submitFormData, token)
-        toast({ title: "Success", description: "Expense updated successfully" })
+        await expenseApi.updateExpense(
+          editingExpense._id,
+          submitFormData,
+          token,
+        );
+        toast({
+          title: "Success",
+          description: "Expense updated successfully",
+        });
       } else {
-        await expenseApi.createExpense(submitFormData, token)
-        toast({ title: "Success", description: "Expense created successfully" })
+        await expenseApi.createExpense(submitFormData, token);
+        toast({
+          title: "Success",
+          description: "Expense created successfully",
+        });
       }
 
-      setShowForm(false)
-      setEditingExpense(null)
-      resetForm()
-      fetchExpenses()
-      fetchStats()
+      setShowForm(false);
+      setEditingExpense(null);
+      resetForm();
+      fetchExpenses();
+      fetchStats();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to save expense", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save expense",
+        variant: "destructive",
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleEdit = (expense: Expense) => {
-    setEditingExpense(expense)
+    setEditingExpense(expense);
     setFormData({
       name: expense.name,
       category: expense.category,
@@ -183,61 +249,82 @@ export default function ExpensesPage() {
       description: expense.description || "",
       frequency: expense.frequency || "month",
       frequency_value: expense.frequency_value?.toString() || "",
-    })
-    setShowForm(true)
-  }
+    });
+    setShowForm(true);
+  };
 
   const handleDelete = async (id: string) => {
-    if (!token) return
-    if (!confirm("Are you sure you want to delete this expense?")) return
+    if (!token) return;
+    if (!confirm("Are you sure you want to delete this expense?")) return;
 
     try {
-      await expenseApi.deleteExpense(id, token)
-      toast({ title: "Success", description: "Expense deleted successfully" })
-      fetchExpenses()
-      fetchStats()
+      await expenseApi.deleteExpense(id, token);
+      toast({ title: "Success", description: "Expense deleted successfully" });
+      fetchExpenses();
+      fetchStats();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to delete expense", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete expense",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const handleMarkAsPaid = (expense: Expense) => {
-    setExpenseToPay(expense)
-    setPaymentMethod("")
-    setShowPaidDialog(true)
-  }
+    setExpenseToPay(expense);
+    setPaymentMethod("");
+    setShowPaidDialog(true);
+  };
 
   const confirmMarkAsPaid = async () => {
-    if (!token || !expenseToPay) return
+    if (!token || !expenseToPay) return;
     if (!paymentMethod) {
-      toast({ title: "Error", description: "Please select a payment method", variant: "destructive" })
-      return
+      toast({
+        title: "Error",
+        description: "Please select a payment method",
+        variant: "destructive",
+      });
+      return;
     }
 
     try {
-      await expenseApi.markAsPaid(expenseToPay._id, new Date().toISOString(), paymentMethod, token)
-      toast({ title: "Success", description: "Expense marked as paid" })
-      setShowPaidDialog(false)
-      setExpenseToPay(null)
-      setPaymentMethod("")
-      fetchExpenses()
-      fetchStats()
+      await expenseApi.markAsPaid(
+        expenseToPay._id,
+        new Date().toISOString(),
+        paymentMethod,
+        token,
+      );
+      toast({ title: "Success", description: "Expense marked as paid" });
+      setShowPaidDialog(false);
+      setExpenseToPay(null);
+      setPaymentMethod("");
+      fetchExpenses();
+      fetchStats();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to mark as paid", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark as paid",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const handleToggleActive = async (id: string) => {
-    if (!token) return
+    if (!token) return;
     try {
-      await expenseApi.toggleActive(id, token)
-      toast({ title: "Success", description: "Expense status updated" })
-      fetchExpenses()
-      fetchStats()
+      await expenseApi.toggleActive(id, token);
+      toast({ title: "Success", description: "Expense status updated" });
+      fetchExpenses();
+      fetchStats();
     } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to update status", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update status",
+        variant: "destructive",
+      });
     }
-  }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -250,48 +337,58 @@ export default function ExpensesPage() {
       description: "",
       frequency: "month",
       frequency_value: "",
-    })
-  }
+    });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "paid":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "active":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800";
       case "pending":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       case "overdue":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       case "stopped":
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       case "medium":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       case "low":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Expense Management</h1>
-            <p className="text-muted-foreground">Track and manage all expenses</p>
+            <h1 className="text-3xl font-bold text-foreground">
+              Expense Management
+            </h1>
+            <p className="text-muted-foreground">
+              Track and manage all expenses
+            </p>
           </div>
-          <Button onClick={() => { setShowForm(true); setEditingExpense(null); resetForm() }}>
+          <Button
+            onClick={() => {
+              setShowForm(true);
+              setEditingExpense(null);
+              resetForm();
+            }}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Expense
           </Button>
@@ -301,11 +398,15 @@ export default function ExpensesPage() {
           <div className="grid gap-4 md:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Expenses
+                </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalExpenses.toLocaleString()} Frw</div>
+                <div className="text-2xl font-bold">
+                  {stats.totalExpenses.toLocaleString()} Frw
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -314,7 +415,9 @@ export default function ExpensesPage() {
                 <CheckCircle className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.paidExpenses.toLocaleString()} Frw</div>
+                <div className="text-2xl font-bold">
+                  {stats.paidExpenses.toLocaleString()} Frw
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -323,7 +426,9 @@ export default function ExpensesPage() {
                 <TrendingUp className="h-4 w-4 text-yellow-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingExpenses.toLocaleString()} Frw</div>
+                <div className="text-2xl font-bold">
+                  {stats.pendingExpenses.toLocaleString()} Frw
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -332,7 +437,9 @@ export default function ExpensesPage() {
                 <XCircle className="h-4 w-4 text-red-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.overdueExpenses.toLocaleString()} Frw</div>
+                <div className="text-2xl font-bold">
+                  {stats.overdueExpenses.toLocaleString()} Frw
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -345,15 +452,30 @@ export default function ExpensesPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setFilters({ category: "all", status: "all", type: "all", priority: "all", startDate: "", endDate: "" })}
+                onClick={() =>
+                  setFilters({
+                    category: "all",
+                    status: "all",
+                    type: "all",
+                    priority: "all",
+                    startDate: "",
+                    endDate: "",
+                  })
+                }
               >
                 Reset
               </Button>
             </div>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-4">
-            <Select value={filters.category} onValueChange={(value) => { setFilters({ ...filters, category: value }); setPage(1) }}>
-              <SelectTrigger className="w-[180px]">
+            <Select
+              value={filters.category}
+              onValueChange={(value) => {
+                setFilters({ ...filters, category: value });
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-45">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -368,8 +490,14 @@ export default function ExpensesPage() {
                 <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filters.status} onValueChange={(value) => { setFilters({ ...filters, status: value }); setPage(1) }}>
-              <SelectTrigger className="w-[180px]">
+            <Select
+              value={filters.status}
+              onValueChange={(value) => {
+                setFilters({ ...filters, status: value });
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-45">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -381,8 +509,14 @@ export default function ExpensesPage() {
                 <SelectItem value="stopped">Stopped</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filters.type} onValueChange={(value) => { setFilters({ ...filters, type: value }); setPage(1) }}>
-              <SelectTrigger className="w-[180px]">
+            <Select
+              value={filters.type}
+              onValueChange={(value) => {
+                setFilters({ ...filters, type: value });
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-45">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
@@ -391,8 +525,14 @@ export default function ExpensesPage() {
                 <SelectItem value="recursive">Recursive</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filters.priority} onValueChange={(value) => { setFilters({ ...filters, priority: value }); setPage(1) }}>
-              <SelectTrigger className="w-[180px]">
+            <Select
+              value={filters.priority}
+              onValueChange={(value) => {
+                setFilters({ ...filters, priority: value });
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-45">
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>
@@ -406,86 +546,159 @@ export default function ExpensesPage() {
               type="date"
               placeholder="Start Date"
               value={filters.startDate}
-              onChange={(e) => { setFilters({ ...filters, startDate: e.target.value }); setPage(1) }}
-              className="w-[180px]"
+              onChange={(e) => {
+                setFilters({ ...filters, startDate: e.target.value });
+                setPage(1);
+              }}
+              className="w-45"
             />
             <Input
               type="date"
               placeholder="End Date"
               value={filters.endDate}
-              onChange={(e) => { setFilters({ ...filters, endDate: e.target.value }); setPage(1) }}
-              className="w-[180px]"
+              onChange={(e) => {
+                setFilters({ ...filters, endDate: e.target.value });
+                setPage(1);
+              }}
+              className="w-45"
             />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Expenses List</CardTitle>
+        <Card className="border-muted/40">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Expenses</CardTitle>
+            <span className="text-sm text-muted-foreground">
+              {expenses.length} records
+            </span>
           </CardHeader>
+
           <CardContent>
             {isLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-12 animate-pulse bg-muted rounded" />
+                  <div
+                    key={i}
+                    className="h-12 rounded-md bg-muted animate-pulse"
+                  />
                 ))}
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto">
+                <div className="relative overflow-x-auto rounded-lg border">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-muted/50">
                       <TableRow>
                         <TableHead>Name</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Priority</TableHead>
-                        <TableHead>Due Date</TableHead>
+                        <TableHead>Due</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
+
                     <TableBody>
                       {expenses.map((expense) => (
-                        <TableRow key={expense._id}>
-                          <TableCell className="font-medium">{expense.name}</TableCell>
-                          <TableCell className="capitalize">{expense.category}</TableCell>
-                          <TableCell className="font-semibold">{expense.amount.toLocaleString()} Frw</TableCell>
+                        <TableRow
+                          key={expense._id}
+                          className="hover:bg-muted/40 transition"
+                        >
+                          <TableCell className="font-medium">
+                            {expense.name}
+                          </TableCell>
+
+                          <TableCell className="capitalize">
+                            {expense.category}
+                          </TableCell>
+
+                          <TableCell className="font-semibold">
+                            {expense.amount.toLocaleString()} Frw
+                          </TableCell>
+
                           <TableCell>
-                            <Badge variant={expense.type === "recursive" ? "default" : "outline"}>
-                              {expense.type === "recursive" ? "Recursive" : "One Time"}
+                            <Badge
+                              variant={
+                                expense.type === "recursive"
+                                  ? "default"
+                                  : "outline"
+                              }
+                            >
+                              {expense.type === "recursive"
+                                ? "Recurring"
+                                : "One-time"}
                             </Badge>
                           </TableCell>
+
                           <TableCell>
-                            <Badge className={getPriorityColor(expense.priority)}>{expense.priority}</Badge>
+                            <Badge
+                              className={getPriorityColor(expense.priority)}
+                            >
+                              {expense.priority}
+                            </Badge>
                           </TableCell>
-                          <TableCell>{new Date(expense.due_date).toLocaleDateString()}</TableCell>
+
                           <TableCell>
-                            <Badge className={getStatusColor(expense.status)}>{expense.status}</Badge>
+                            {new Date(expense.due_date).toLocaleDateString()}
                           </TableCell>
+
                           <TableCell>
-                            <div className="flex gap-2">
+                            <Badge className={getStatusColor(expense.status)}>
+                              {expense.status}
+                            </Badge>
+                          </TableCell>
+
+                          {/* ACTIONS */}
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
                               {expense.status !== "paid" && (
-                                <Button size="sm" variant="outline" onClick={() => handleMarkAsPaid(expense)}>
-                                  <CheckCircle className="h-4 w-4" />
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  title="Mark as paid"
+                                  onClick={() => handleMarkAsPaid(expense)}
+                                >
+                                  <CheckCircle className="w-4 h-4" />
                                 </Button>
                               )}
+
                               {expense.type === "recursive" && (
                                 <Button
-                                  size="sm"
+                                  size="icon"
                                   variant="outline"
-                                  onClick={() => handleToggleActive(expense._id)}
-                                  title={expense.is_active ? "Stop" : "Activate"}
+                                  title={
+                                    expense.is_active ? "Pause" : "Activate"
+                                  }
+                                  onClick={() =>
+                                    handleToggleActive(expense._id)
+                                  }
                                 >
-                                  {expense.is_active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                                  {expense.is_active ? (
+                                    <Pause className="w-4 h-4" />
+                                  ) : (
+                                    <Play className="w-4 h-4" />
+                                  )}
                                 </Button>
                               )}
-                              <Button size="sm" variant="outline" onClick={() => handleEdit(expense)}>
-                                <Edit className="h-4 w-4" />
+
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                title="Edit"
+                                onClick={() => handleEdit(expense)}
+                              >
+                                <Edit className="w-4 h-4" />
                               </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleDelete(expense._id)}>
-                                <Trash2 className="h-4 w-4" />
+
+                              <Button
+                                size="icon"
+                                variant="destructive"
+                                title="Delete"
+                                onClick={() => handleDelete(expense._id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -494,17 +707,25 @@ export default function ExpensesPage() {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Pagination */}
                 <div className="flex items-center justify-between mt-4">
-                  <Button onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1} variant="outline">
+                  <Button
+                    variant="outline"
+                    disabled={page === 1}
+                    onClick={() => setPage((p) => p - 1)}
+                  >
                     Previous
                   </Button>
+
                   <span className="text-sm text-muted-foreground">
                     Page {page} of {totalPages}
                   </span>
+
                   <Button
-                    onClick={() => setPage(Math.min(totalPages, page + 1))}
-                    disabled={page === totalPages}
                     variant="outline"
+                    disabled={page === totalPages}
+                    onClick={() => setPage((p) => p + 1)}
                   >
                     Next
                   </Button>
@@ -518,8 +739,12 @@ export default function ExpensesPage() {
         <Dialog open={showForm} onOpenChange={setShowForm}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingExpense ? "Edit Expense" : "Add New Expense"}</DialogTitle>
-              <DialogDescription>Enter the expense details below</DialogDescription>
+              <DialogTitle>
+                {editingExpense ? "Edit Expense" : "Add New Expense"}
+              </DialogTitle>
+              <DialogDescription>
+                Enter the expense details below
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div>
@@ -527,14 +752,21 @@ export default function ExpensesPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="Expense name"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="category">Category *</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, category: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
@@ -556,7 +788,9 @@ export default function ExpensesPage() {
                     id="amount"
                     type="number"
                     value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, amount: e.target.value })
+                    }
                     placeholder="0.00"
                   />
                 </div>
@@ -564,7 +798,12 @@ export default function ExpensesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="type">Type *</Label>
-                  <Select value={formData.type} onValueChange={(value: "one_time" | "recursive") => setFormData({ ...formData, type: value })}>
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value: "one_time" | "recursive") =>
+                      setFormData({ ...formData, type: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -576,7 +815,12 @@ export default function ExpensesPage() {
                 </div>
                 <div>
                   <Label htmlFor="priority">Priority *</Label>
-                  <Select value={formData.priority} onValueChange={(value: "high" | "medium" | "low") => setFormData({ ...formData, priority: value })}>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(value: "high" | "medium" | "low") =>
+                      setFormData({ ...formData, priority: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -594,14 +838,21 @@ export default function ExpensesPage() {
                   id="due_date"
                   type="date"
                   value={formData.due_date}
-                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, due_date: e.target.value })
+                  }
                 />
               </div>
               {formData.type === "recursive" && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="frequency">Frequency *</Label>
-                    <Select value={formData.frequency} onValueChange={(value: any) => setFormData({ ...formData, frequency: value })}>
+                    <Select
+                      value={formData.frequency}
+                      onValueChange={(value: any) =>
+                        setFormData({ ...formData, frequency: value })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -621,7 +872,12 @@ export default function ExpensesPage() {
                         id="frequency_value"
                         type="number"
                         value={formData.frequency_value}
-                        onChange={(e) => setFormData({ ...formData, frequency_value: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            frequency_value: e.target.value,
+                          })
+                        }
                         placeholder="e.g., 7"
                       />
                     </div>
@@ -633,18 +889,29 @@ export default function ExpensesPage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   rows={3}
                   placeholder="Enter expense description"
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setShowForm(false); setEditingExpense(null); resetForm() }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingExpense(null);
+                  resetForm();
+                }}
+              >
                 Cancel
               </Button>
               <Button onClick={handleSubmit} disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 {editingExpense ? "Update" : "Create"} Expense
               </Button>
             </DialogFooter>
@@ -657,7 +924,8 @@ export default function ExpensesPage() {
             <DialogHeader>
               <DialogTitle>Mark Expense as Paid</DialogTitle>
               <DialogDescription>
-                Select the payment method used for this expense: {expenseToPay?.name}
+                Select the payment method used for this expense:{" "}
+                {expenseToPay?.name}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -677,7 +945,14 @@ export default function ExpensesPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setShowPaidDialog(false); setExpenseToPay(null); setPaymentMethod("") }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPaidDialog(false);
+                  setExpenseToPay(null);
+                  setPaymentMethod("");
+                }}
+              >
                 Cancel
               </Button>
               <Button onClick={confirmMarkAsPaid} disabled={!paymentMethod}>
@@ -688,5 +963,5 @@ export default function ExpensesPage() {
         </Dialog>
       </div>
     </DashboardLayout>
-  )
+  );
 }
